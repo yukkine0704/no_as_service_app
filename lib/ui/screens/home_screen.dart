@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/phrases_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../providers/connectivity_provider.dart';
-import '../widgets/no_card.dart';
+import '../widgets/swipeable_card.dart';
 import '../widgets/error_offline_view.dart';
 
 /// Home screen with card swiper for displaying "No" phrases.
@@ -288,40 +288,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // PageView Card Swiper
+        // Swipeable Cards Stack
         Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: phrases.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-              // Load more phrases if running low
-              if (phrases.length - index < 3) {
-                phrasesProvider.fetchRandomPhrase();
-              }
-            },
-            itemBuilder: (context, index) {
-              return GestureDetector(
-                onHorizontalDragEnd: (details) {
-                  if (details.velocity.pixelsPerSecond.dx > 0) {
-                    // Swipe right - add to favorites
-                    _onSwipeRight();
-                  } else if (details.velocity.pixelsPerSecond.dx < 0) {
-                    // Swipe left - next card
-                    _onSwipeLeft();
-                  }
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: NoCard(
-                    phrase: phrases[index],
-                  ),
-                ),
-              );
-            },
-          ),
+          child: _buildCardStack(phrases, phrasesProvider),
         ),
 
         // Bottom action buttons
@@ -365,6 +334,58 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCardStack(List phrases, PhrasesProvider phrasesProvider) {
+    if (phrases.isEmpty || _currentPage >= phrases.length) {
+      return const SizedBox.shrink();
+    }
+
+    // Show current card and next card for depth effect
+    final currentPhrase = phrases[_currentPage];
+    final hasNextCard = _currentPage < phrases.length - 1;
+    final nextPhrase = hasNextCard ? phrases[_currentPage + 1] : null;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Next card (behind)
+        if (nextPhrase != null)
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Transform.scale(
+                scale: 0.95,
+                child: Opacity(
+                  opacity: 0.5,
+                  child: SwipeableCard(
+                    phrase: nextPhrase,
+                    onSwipeRight: () {},
+                    onSwipeLeft: () {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        
+        // Current card (front)
+        Positioned.fill(
+          child: SwipeableCard(
+            key: ValueKey(currentPhrase.id),
+            phrase: currentPhrase,
+            onSwipeRight: () {
+              _onSwipeRight();
+            },
+            onSwipeLeft: () {
+              _onSwipeLeft();
+            },
+            onSwipeCancel: () {
+              // Card returned to center - no action needed
+            },
           ),
         ),
       ],

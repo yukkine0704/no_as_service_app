@@ -1,5 +1,129 @@
 import 'package:flutter/material.dart';
 
+// Material 3 Expressive Color Scheme Variant (Android 16 QPR1)
+class _ExpressiveColorScheme {
+  static ColorScheme fromSeed({
+    required Color seedColor,
+    required Brightness brightness,
+  }) {
+    final baseScheme = ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: brightness,
+    );
+
+    // Apply Expressive variant adjustments for higher chromatic contrast
+    // and more vibrant colors typical of Android 16 ME3
+    if (brightness == Brightness.light) {
+      return baseScheme.copyWith(
+        // Increase primary saturation for more expressive look
+        primary: _saturateColor(baseScheme.primary, 0.15),
+        onPrimary: baseScheme.onPrimary,
+        primaryContainer: _saturateColor(baseScheme.primaryContainer, 0.1),
+        onPrimaryContainer: baseScheme.onPrimaryContainer,
+        
+        // Boost secondary for visual hierarchy
+        secondary: _saturateColor(baseScheme.secondary, 0.1),
+        onSecondary: baseScheme.onSecondary,
+        secondaryContainer: _saturateColor(baseScheme.secondaryContainer, 0.08),
+        onSecondaryContainer: baseScheme.onSecondaryContainer,
+        
+        // Tertiary gets more prominence in expressive
+        tertiary: _saturateColor(baseScheme.tertiary, 0.12),
+        onTertiary: baseScheme.onTertiary,
+        tertiaryContainer: _saturateColor(baseScheme.tertiaryContainer, 0.08),
+        onTertiaryContainer: baseScheme.onTertiaryContainer,
+        
+        // Error colors stay clear
+        error: baseScheme.error,
+        onError: baseScheme.onError,
+        errorContainer: baseScheme.errorContainer,
+        onErrorContainer: baseScheme.onErrorContainer,
+        
+        // Surface colors - minimal shadows, rely on color
+        surface: baseScheme.surface,
+        onSurface: baseScheme.onSurface,
+        surfaceContainerHighest: baseScheme.surfaceContainerHighest,
+        onSurfaceVariant: baseScheme.onSurfaceVariant,
+        
+        // Outline - softer for expressive feel
+        outline: baseScheme.outline.withOpacity(0.7),
+        outlineVariant: baseScheme.outlineVariant,
+        
+        // Shadow removed in expressive (rely on color)
+        shadow: Colors.transparent,
+        scrim: baseScheme.scrim,
+        
+        // Inverse colors for better contrast
+        inverseSurface: baseScheme.inverseSurface,
+        onInverseSurface: baseScheme.onInverseSurface,
+        inversePrimary: baseScheme.inversePrimary,
+      );
+    } else {
+      // Dark mode - expressive adjustments
+      return baseScheme.copyWith(
+        primary: _saturateColor(baseScheme.primary, 0.1),
+        onPrimary: baseScheme.onPrimary,
+        primaryContainer: _saturateColor(baseScheme.primaryContainer, 0.15),
+        onPrimaryContainer: baseScheme.onPrimaryContainer,
+        
+        secondary: _saturateColor(baseScheme.secondary, 0.08),
+        onSecondary: baseScheme.onSecondary,
+        secondaryContainer: _saturateColor(baseScheme.secondaryContainer, 0.1),
+        onSecondaryContainer: baseScheme.onSecondaryContainer,
+        
+        tertiary: _saturateColor(baseScheme.tertiary, 0.1),
+        onTertiary: baseScheme.onTertiary,
+        tertiaryContainer: _saturateColor(baseScheme.tertiaryContainer, 0.1),
+        onTertiaryContainer: baseScheme.onTertiaryContainer,
+        
+        error: baseScheme.error,
+        onError: baseScheme.onError,
+        errorContainer: baseScheme.errorContainer,
+        onErrorContainer: baseScheme.onErrorContainer,
+        
+        surface: baseScheme.surface,
+        onSurface: baseScheme.onSurface,
+        surfaceContainerHighest: baseScheme.surfaceContainerHighest,
+        onSurfaceVariant: baseScheme.onSurfaceVariant,
+        
+        outline: baseScheme.outline.withOpacity(0.5),
+        outlineVariant: baseScheme.outlineVariant,
+        
+        shadow: Colors.transparent,
+        scrim: baseScheme.scrim,
+        
+        inverseSurface: baseScheme.inverseSurface,
+        onInverseSurface: baseScheme.onInverseSurface,
+        inversePrimary: baseScheme.inversePrimary,
+      );
+    }
+  }
+
+  /// Increase color saturation for expressive look
+  static Color _saturateColor(Color color, double amount) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl.withSaturation((hsl.saturation + amount).clamp(0.0, 1.0)).toColor();
+  }
+}
+
+// Helper to apply Expressive variant to existing ColorScheme
+ColorScheme applyExpressiveVariant(ColorScheme scheme, Brightness brightness) {
+  return _ExpressiveColorScheme.fromSeed(
+    seedColor: scheme.primary,
+    brightness: brightness,
+  ).copyWith(
+    // Preserve original colors but enhance with expressive treatment
+    primary: scheme.primary,
+    primaryContainer: scheme.primaryContainer,
+    secondary: scheme.secondary,
+    secondaryContainer: scheme.secondaryContainer,
+    tertiary: scheme.tertiary,
+    tertiaryContainer: scheme.tertiaryContainer,
+    surface: scheme.surface,
+    surfaceContainerHighest: scheme.surfaceContainerHighest,
+  );
+}
+
 // Predefined color palettes
 class AppColorPalettes {
   // Electric Orange - Vibrant & Energetic
@@ -52,36 +176,41 @@ class ThemeManager {
   }
 
   // Create a Material 3 theme with specified color palette
-  static ThemeData _createTheme(ColorScheme colorScheme) {
+  static ThemeData _createTheme(ColorScheme colorScheme, {bool expressive = true}) {
     final isDark = colorScheme.brightness == Brightness.dark;
+    
+    // Apply expressive adjustments if enabled (Material 3 Expressive - Android 16 ME3)
+    final effectiveColorScheme = expressive 
+        ? applyExpressiveVariant(colorScheme, colorScheme.brightness)
+        : colorScheme;
     
     return ThemeData(
       useMaterial3: true,
-      colorScheme: colorScheme,
+      colorScheme: effectiveColorScheme,
       brightness: colorScheme.brightness,
       
-      // AppBar theme
+      // AppBar theme - flat for expressive
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
+        backgroundColor: effectiveColorScheme.surface,
+        foregroundColor: effectiveColorScheme.onSurface,
         elevation: 0,
         centerTitle: true,
       ),
 
-      // Card theme
+      // Card theme - minimal elevation, rely on color
       cardTheme: CardThemeData(
-        color: colorScheme.surface,
-        elevation: 2,
+        color: effectiveColorScheme.surfaceContainerHighest,
+        elevation: 0, // No elevation - use color for hierarchy
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
       ),
 
-      // Button themes
+      // Filled card for containers
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
+          backgroundColor: effectiveColorScheme.primary,
+          foregroundColor: effectiveColorScheme.onPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -91,9 +220,9 @@ class ThemeManager {
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.surface,
-          foregroundColor: colorScheme.onSurface,
-          elevation: 2,
+          backgroundColor: effectiveColorScheme.surfaceContainerHighest,
+          foregroundColor: effectiveColorScheme.onSurface,
+          elevation: 0, // Flat in expressive
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -103,21 +232,21 @@ class ThemeManager {
 
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: colorScheme.primary,
+          foregroundColor: effectiveColorScheme.primary,
         ),
       ),
 
       // Input decoration theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colorScheme.surfaceVariant,
+        fillColor: effectiveColorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderSide: BorderSide.none,
           borderRadius: BorderRadius.circular(12),
         ),
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(
-            color: colorScheme.primary,
+            color: effectiveColorScheme.primary,
             width: 2,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -129,36 +258,43 @@ class ThemeManager {
       switchTheme: SwitchThemeData(
         thumbColor: MaterialStateProperty.resolveWith<Color>(
           (states) => states.contains(MaterialState.selected)
-              ? colorScheme.primary
+              ? effectiveColorScheme.primary
               : isDark ? Colors.grey[700]! : Colors.grey[300]!,
         ),
         trackColor: MaterialStateProperty.resolveWith<Color>(
           (states) => states.contains(MaterialState.selected)
-              ? colorScheme.primary.withOpacity(0.3)
+              ? effectiveColorScheme.primary.withOpacity(0.3)
               : isDark ? Colors.grey[600]! : Colors.grey[200]!,
         ),
       ),
 
       // Slider theme
       sliderTheme: SliderThemeData(
-        activeTrackColor: colorScheme.primary,
-        inactiveTrackColor: colorScheme.surfaceVariant,
-        thumbColor: colorScheme.primary,
-        overlayColor: colorScheme.primary.withOpacity(0.2),
+        activeTrackColor: effectiveColorScheme.primary,
+        inactiveTrackColor: effectiveColorScheme.surfaceContainerHighest,
+        thumbColor: effectiveColorScheme.primary,
+        overlayColor: effectiveColorScheme.primary.withOpacity(0.2),
       ),
 
-      // Bottom navigation bar theme
+      // Bottom navigation bar - flat style
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: colorScheme.surface,
-        selectedItemColor: colorScheme.primary,
-        unselectedItemColor: colorScheme.onSurface.withOpacity(0.5),
-        elevation: 8,
+        backgroundColor: effectiveColorScheme.surface,
+        selectedItemColor: effectiveColorScheme.primary,
+        unselectedItemColor: effectiveColorScheme.onSurface.withOpacity(0.6),
+        elevation: 0, // No elevation
+      ),
+
+      // Navigation bar (Material 3)
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: effectiveColorScheme.surface,
+        indicatorColor: effectiveColorScheme.primaryContainer,
+        elevation: 0,
       ),
 
       // Chip theme
       chipTheme: ChipThemeData(
-        backgroundColor: colorScheme.surfaceVariant,
-        selectedColor: colorScheme.primary,
+        backgroundColor: effectiveColorScheme.surfaceContainerHighest,
+        selectedColor: effectiveColorScheme.primary,
         labelStyle: TextStyle(
           color: isDark ? Colors.white : Colors.black,
         ),
@@ -168,10 +304,30 @@ class ThemeManager {
         ),
       ),
 
-      // Divider theme
+      // Divider theme - subtle
       dividerTheme: DividerThemeData(
-        color: colorScheme.surfaceVariant,
+        color: effectiveColorScheme.outlineVariant.withOpacity(0.5),
         thickness: 1,
+      ),
+
+      // SnackBar - flat style
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: effectiveColorScheme.inverseSurface,
+        contentTextStyle: TextStyle(color: effectiveColorScheme.onInverseSurface),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+
+      // Floating action button
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: effectiveColorScheme.primaryContainer,
+        foregroundColor: effectiveColorScheme.onPrimaryContainer,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
     );
   }
@@ -224,7 +380,7 @@ class ThemeManager {
 
   // Create dynamic color theme (Android 12+ Monet colors)
   static ThemeData createDynamicColorTheme(ColorScheme dynamicColorScheme) {
-    return _createTheme(dynamicColorScheme);
+    return _createTheme(dynamicColorScheme, expressive: true);
   }
 
   // Helper method to get predefined palettes for UI selection
