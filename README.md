@@ -117,7 +117,6 @@ La app se conecta a la **NoWay API** (`https://naas.isalman.dev`) para obtener f
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | GET | `/no` | Obtiene una frase aleatoria |
-| GET | `/no/{id}` | Obtiene una frase por ID |
 
 ### Manejo de errores
 
