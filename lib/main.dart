@@ -27,7 +27,7 @@ class NoWayApp extends StatelessWidget {
             ChangeNotifierProvider(create: (_) => ThemeProvider()),
             ChangeNotifierProvider(create: (_) => PhrasesProvider()),
             ChangeNotifierProvider(create: (_) => FavoritesProvider()),
-            ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
+            ChangeNotifierProvider(create: (_) => ConnectivityProvider()..initialize()),
           ],
           child: Consumer<ThemeProvider>(
             builder: (context, themeProvider, child) {

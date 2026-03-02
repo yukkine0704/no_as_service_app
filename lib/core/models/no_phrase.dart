@@ -30,19 +30,36 @@ class NoPhrase {
   /// Creates a NoPhrase instance from a JSON map.
   ///
   /// Handles various field names that might be returned by the API.
+  /// If no ID is provided, generates a hash-based ID from the phrase content.
   factory NoPhrase.fromJson(Map<String, dynamic> json) {
+    // Extract the phrase text from various possible field names
+    final phraseText = json['phrase']?.toString() ?? 
+                       json['text']?.toString() ?? 
+                       json['no']?.toString() ??
+                       json['reason']?.toString() ?? 
+                       '';
+    
+    // Generate ID from phrase content hash if not provided
+    final idValue = json['id']?.toString();
+    final String generatedId = (idValue?.isNotEmpty == true) 
+        ? idValue! 
+        : _generateIdFromPhrase(phraseText);
+    
     return NoPhrase(
-      id: json['id']?.toString() ?? '',
-      phrase: json['phrase']?.toString() ?? 
-              json['text']?.toString() ?? 
-              json['no']?.toString() ?? 
-              '',
+      id: generatedId,
+      phrase: phraseText,
       category: json['category']?.toString(),
       description: json['description']?.toString(),
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
     );
+  }
+
+  /// Generates a unique ID from the phrase content using hash.
+  static String _generateIdFromPhrase(String phrase) {
+    if (phrase.isEmpty) return DateTime.now().millisecondsSinceEpoch.toString();
+    return phrase.hashCode.abs().toString();
   }
 
   /// Converts this NoPhrase instance to a JSON map.

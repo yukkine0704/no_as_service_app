@@ -124,7 +124,7 @@ class RateLimitInterceptor extends Interceptor {
 /// Uses Dio as the HTTP client with rate limiting and error handling.
 class ApiService {
   /// Base URL for the NoWay API
-  static const String _baseUrl = 'https://naas.isalman.dev/no';
+  static const String _baseUrl = 'https://naas.isalman.dev';
 
   late final Dio _dio;
   late final RateLimitInterceptor _rateLimitInterceptor;
@@ -172,7 +172,7 @@ class ApiService {
   /// Throws [ApiError] for other API errors.
   Future<NoPhrase> getRandomPhrase() async {
     try {
-      final response = await _dio.get('/random');
+      final response = await _dio.get('/no');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -203,32 +203,28 @@ class ApiService {
 
   /// Fetches all available "No" phrases from the API.
   ///
+  /// Since the API only supports random phrase endpoints, this method
+  /// fetches a single random phrase to simulate "all" behavior.
+  /// For multiple phrases, call this method multiple times.
+  ///
   /// Throws [RateLimitError] if rate limit is exceeded.
   /// Throws [NetworkError] if there's a connectivity issue.
   /// Throws [ApiError] for other API errors.
   Future<List<NoPhrase>> getAllPhrases() async {
     try {
-      final response = await _dio.get('/all');
+      final response = await _dio.get('/no');
 
       if (response.statusCode == 200) {
         final data = response.data;
         
-        if (data is List) {
-          return data
-              .map((item) => NoPhrase.fromJson(item as Map<String, dynamic>))
-              .toList();
-        } else if (data is Map<String, dynamic>) {
-          // Handle nested data structure
-          if (data.containsKey('data') && data['data'] is List) {
-            return (data['data'] as List)
-                .map((item) => NoPhrase.fromJson(item as Map<String, dynamic>))
-                .toList();
+        // Handle single phrase response (the API returns one random phrase)
+        if (data is Map<String, dynamic>) {
+          if (data.containsKey('data')) {
+            return [NoPhrase.fromJson(data['data'] as Map<String, dynamic>)];
           }
-          if (data.containsKey('phrases') && data['phrases'] is List) {
-            return (data['phrases'] as List)
-                .map((item) => NoPhrase.fromJson(item as Map<String, dynamic>))
-                .toList();
-          }
+          return [NoPhrase.fromJson(data)];
+        } else if (data is String) {
+          return [NoPhrase(id: '1', phrase: data)];
         }
         
         throw const ApiError(message: 'Unexpected response format');
@@ -252,7 +248,7 @@ class ApiService {
   /// Throws [ApiError] for other API errors.
   Future<NoPhrase> getPhraseById(String id) async {
     try {
-      final response = await _dio.get('/$id');
+      final response = await _dio.get('/no/$id');
 
       if (response.statusCode == 200) {
         final data = response.data;
