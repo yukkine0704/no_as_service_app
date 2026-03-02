@@ -1,0 +1,27 @@
+name: no_as_service_app
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.1.1
+  dio: ^5.4.0
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+  flutter_card_swiper: ^4.0.0
+  dynamic_color: ^1.6.5
+  lottie: ^2.7.0
+  connectivity_plus: ^6.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
