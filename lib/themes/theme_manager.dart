@@ -167,10 +167,9 @@ class ThemeManager {
       secondary: secondary,
       tertiary: tertiary,
       surface: brightness == Brightness.light ? Colors.white : neutral,
-      surfaceVariant: brightness == Brightness.light 
+      surfaceContainerHighest: brightness == Brightness.light 
           ? const Color(0xFFF5F5F5) 
           : neutralVariant,
-      background: brightness == Brightness.light ? Colors.white : neutral,
       error: Colors.redAccent,
     );
   }
@@ -256,13 +255,13 @@ class ThemeManager {
 
       // Switch theme
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith<Color>(
-          (states) => states.contains(MaterialState.selected)
+        thumbColor: WidgetStateProperty.resolveWith<Color>(
+          (states) => states.contains(WidgetState.selected)
               ? effectiveColorScheme.primary
               : isDark ? Colors.grey[700]! : Colors.grey[300]!,
         ),
-        trackColor: MaterialStateProperty.resolveWith<Color>(
-          (states) => states.contains(MaterialState.selected)
+        trackColor: WidgetStateProperty.resolveWith<Color>(
+          (states) => states.contains(WidgetState.selected)
               ? effectiveColorScheme.primary.withOpacity(0.3)
               : isDark ? Colors.grey[600]! : Colors.grey[200]!,
         ),

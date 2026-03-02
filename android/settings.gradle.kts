@@ -23,4 +23,20 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
 }
 
+// Workaround for isar_flutter_libs and other plugins without namespace
+gradle.beforeProject {
+    if (this.name != "app") {
+        afterEvaluate {
+            if (this.hasProperty("android")) {
+                val android = this.property("android")
+                if (android is com.android.build.gradle.LibraryExtension) {
+                    if (android.namespace.isNullOrEmpty()) {
+                        android.namespace = "com.example.${this.name.replace("-", "_").replace(":", ".")}"
+                    }
+                }
+            }
+        }
+    }
+}
+
 include(":app")

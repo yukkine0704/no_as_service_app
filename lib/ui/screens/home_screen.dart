@@ -29,7 +29,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController(viewportFraction: 0.9);
-  int _currentPage = 0;
+  final int _currentPage = 0;
 
   @override
   void initState() {
