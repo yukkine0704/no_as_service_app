@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/models/no_phrase.dart';
 import '../../providers/phrases_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../providers/connectivity_provider.dart';
