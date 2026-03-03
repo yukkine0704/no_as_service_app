@@ -255,58 +255,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Column(
       children: [
-        // Instructions
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Left instruction
-              Row(
-                children: [
-                  Icon(
-                    Icons.arrow_back_rounded,
-                    size: 16,
-                    color: colorScheme.outline,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Siguiente',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
-                  ),
-                ],
-              ),
-              // Counter
-              Text(
-                '${_currentPage + 1}/${phrases.length}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              // Right instruction
-              Row(
-                children: [
-                  Text(
-                    'Favorito',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.favorite_rounded,
-                    size: 16,
-                    color: colorScheme.error,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
         // Swipeable Cards Stack or Rate Limit Card
         Expanded(
           child: showRateLimit

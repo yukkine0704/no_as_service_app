@@ -88,6 +88,11 @@ class FavoritesProvider extends ChangeNotifier {
   ///
   /// Returns true if successful, false otherwise.
   Future<bool> addFavorite(NoPhrase phrase) async {
+    // Ensure provider is initialized before operation
+    if (!_isInitialized) {
+      await initialize();
+    }
+
     // Check if already in favorites
     if (isFavorite(phrase.id)) {
       return true;
@@ -115,6 +120,11 @@ class FavoritesProvider extends ChangeNotifier {
   ///
   /// Returns true if successfully removed, false otherwise.
   Future<bool> removeFavorite(String phraseId) async {
+    // Ensure provider is initialized before operation
+    if (!_isInitialized) {
+      await initialize();
+    }
+
     _errorMessage = null;
 
     try {
