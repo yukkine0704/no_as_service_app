@@ -7,6 +7,7 @@ import '../../providers/connectivity_provider.dart';
 import '../widgets/swipeable_card.dart';
 import '../widgets/error_offline_view.dart';
 import '../widgets/rate_limit_card.dart';
+import '../widgets/skeleton_card.dart';
 
 /// Home screen with card swiper for displaying "No" phrases.
 ///
@@ -190,11 +191,9 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           }
 
-          // Check for loading state
+          // Check for loading state - show skeleton loading
           if (phrasesProvider.isLoading && phrasesProvider.phrases.isEmpty) {
-            return const LoadingView(
-              message: 'Cargando frases...',
-            );
+            return const SkeletonLoadingView();
           }
 
           // Check for error state (non-rate-limit)
@@ -419,6 +418,91 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Simple loading view widget
+class LoadingView extends StatelessWidget {
+  final String message;
+
+  const LoadingView({
+    super.key,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Error view widget with retry button
+class ErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback? onRetry;
+
+  const ErrorView({
+    super.key,
+    required this.message,
+    this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                  ),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Reintentar'),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

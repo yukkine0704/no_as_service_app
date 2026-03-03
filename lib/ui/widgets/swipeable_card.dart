@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/physics.dart';
 
 import '../../core/models/no_phrase.dart';
 
@@ -29,6 +30,9 @@ class SwipeableCard extends StatefulWidget {
   /// Text color override
   final Color? textColor;
 
+  /// Whether to show spring physics animations
+  final bool useSpringPhysics;
+
   const SwipeableCard({
     super.key,
     required this.phrase,
@@ -37,6 +41,7 @@ class SwipeableCard extends StatefulWidget {
     this.onSwipeCancel,
     this.backgroundColor,
     this.textColor,
+    this.useSpringPhysics = true,
   });
 
   @override
@@ -47,6 +52,11 @@ class _SwipeableCardState extends State<SwipeableCard>
     with SingleTickerProviderStateMixin {
   // Spring physics parameters (Android 16 ME3 standard)
   // Using: mass: 1.0, stiffness: 160.0, damping: 14.0
+  static final SpringDescription _springDescription = SpringDescription(
+    mass: 1.0,
+    stiffness: 160.0,
+    damping: 14.0,
+  );
 
   // Threshold for triggering actions
   static const double _swipeThreshold = 100.0;
@@ -54,7 +64,7 @@ class _SwipeableCardState extends State<SwipeableCard>
 
   // Animation controller for spring motion
   late AnimationController _controller;
-  late Animation<Offset> _animation;
+  SpringSimulation? _springSimulation;
 
   // Current drag offset
   Offset _dragOffset = Offset.zero;
@@ -70,15 +80,26 @@ class _SwipeableCardState extends State<SwipeableCard>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _animation = _controller.drive(
-      Tween<Offset>(begin: Offset.zero, end: Offset.zero),
-    );
+    _controller.addListener(_onSpringUpdate);
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onSpringUpdate);
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onSpringUpdate() {
+    if (_springSimulation != null && mounted) {
+      setState(() {
+        // The controller value represents time in the spring simulation
+        final t = _controller.value;
+        // Get position from spring simulation at time t
+        final springX = _springSimulation!.x(t);
+        _dragOffset = Offset(springX, _dragOffset.dy);
+      });
+    }
   }
 
   void _onPanStart(DragStartDetails details) {
@@ -110,6 +131,15 @@ class _SwipeableCardState extends State<SwipeableCard>
       HapticFeedback.selectionClick();
       _hasTriggeredLeftHaptic = true;
     }
+
+    // Reset if moved back below threshold
+    if (absX < threshold * 0.8) {
+      if (_dragOffset.dx > 0) {
+        _hasTriggeredRightHaptic = false;
+      } else {
+        _hasTriggeredLeftHaptic = false;
+      }
+    }
   }
 
   void _onPanEnd(DragEndDetails details) {
@@ -121,69 +151,78 @@ class _SwipeableCardState extends State<SwipeableCard>
     if (absOffset > _swipeThreshold || absVelocity > _velocityThreshold) {
       if (_dragOffset.dx > 0) {
         // Swipe right - animate out to favorite
-        _animateOut(true);
+        _animateOut(true, velocity);
       } else {
         // Swipe left - animate out to next
-        _animateOut(false);
+        _animateOut(false, velocity);
       }
     } else {
       // Return to center with spring physics
-      _animateToCenter();
+      _animateToCenter(velocity);
     }
   }
 
-  void _animateOut(bool toRight) {
+  void _animateOut(bool toRight, double initialVelocity) {
     final screenWidth = MediaQuery.of(context).size.width;
     final targetX = toRight ? screenWidth * 1.5 : -screenWidth * 1.5;
 
-    _animation = _controller.drive(
-      Tween<Offset>(
-        begin: _dragOffset,
-        end: Offset(targetX, _dragOffset.dy * 0.5),
-      ),
-    );
+    if (widget.useSpringPhysics) {
+      // Create spring simulation for natural throw effect
+      _springSimulation = SpringSimulation(
+        _springDescription,
+        _dragOffset.dx, // Start position
+        targetX, // End position (far off screen)
+        initialVelocity / 1000, // Initial velocity (scale down for physics)
+      );
 
-    _controller.duration = const Duration(milliseconds: 300);
-    _controller.forward(from: 0).then((_) {
-      if (toRight) {
-        widget.onSwipeRight?.call();
-      } else {
-        widget.onSwipeLeft?.call();
-      }
-      // Reset state
-      setState(() {
-        _dragOffset = Offset.zero;
+      // Calculate appropriate duration based on spring settling time
+      const settlingTime = 0.8; // Approximate settling time
+      _controller.duration = Duration(
+        milliseconds: (settlingTime * 1000).toInt(),
+      );
+
+      _controller.forward(from: 0).then((_) {
+        if (toRight) {
+          widget.onSwipeRight?.call();
+        } else {
+          widget.onSwipeLeft?.call();
+        }
+        // Reset state after animation
+        if (mounted) {
+          setState(() {
+            _dragOffset = Offset.zero;
+            _springSimulation = null;
+          });
+        }
       });
-    });
+    }
   }
 
-  void _animateToCenter() {
-    // Use spring physics for natural bounce-back
-    _animation = _controller.drive(
-      Tween<Offset>(
-        begin: _dragOffset,
-        end: Offset.zero,
-      ),
-    );
+  void _animateToCenter(double initialVelocity) {
+    if (widget.useSpringPhysics) {
+      // Create spring simulation for natural bounce-back
+      _springSimulation = SpringSimulation(
+        _springDescription,
+        _dragOffset.dx, // Start position
+        0.0, // End position (center)
+        initialVelocity / 1000, // Initial velocity
+      );
 
-    // Calculate duration based on spring parameters
-    const duration = 440;
+      // Spring settling time for return to center
+      const settlingTime = 0.6;
+      _controller.duration = Duration(
+        milliseconds: (settlingTime * 1000).toInt(),
+      );
 
-    _controller.duration = const Duration(milliseconds: duration);
-    _controller.forward(from: 0).then((_) {
-      widget.onSwipeCancel?.call();
-    });
-
-    // Update offset during animation with elastic effect
-    _controller.addListener(_updateOffsetFromSpring);
-  }
-
-  void _updateOffsetFromSpring() {
-    // Use elastic curve for smooth spring effect
-    final t = Curves.elasticOut.transform(_controller.value);
-    setState(() {
-      _dragOffset = Offset.lerp(_dragOffset, Offset.zero, t * 0.3)!;
-    });
+      _controller.forward(from: 0).then((_) {
+        widget.onSwipeCancel?.call();
+        if (mounted) {
+          setState(() {
+            _springSimulation = null;
+          });
+        }
+      });
+    }
   }
 
   /// Calculate morph factor based on drag distance (0.0 to 1.0)
@@ -202,10 +241,18 @@ class _SwipeableCardState extends State<SwipeableCard>
     // Subtle color shift based on swipe direction
     if (_dragOffset.dx > _swipeThreshold) {
       // Swiping right - slightly warm (favorite)
-      return Color.lerp(baseColor, Colors.redAccent.withValues(alpha: 0.1), 0.3)!;
+      return Color.lerp(
+        baseColor,
+        Colors.redAccent.withAlpha(25),
+        0.3,
+      )!;
     } else if (_dragOffset.dx < -_swipeThreshold) {
       // Swiping left - slightly cool (next)
-      return Color.lerp(baseColor, Colors.blueGrey.withValues(alpha: 0.1), 0.3)!;
+      return Color.lerp(
+        baseColor,
+        Colors.blueGrey.withAlpha(25),
+        0.3,
+      )!;
     }
     return baseColor;
   }
@@ -220,13 +267,13 @@ class _SwipeableCardState extends State<SwipeableCard>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.15),
+              color: colorScheme.primary.withAlpha(38),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               'NO',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: textColor.withValues(alpha: 0.7),
+                    color: textColor.withAlpha(178),
                     fontWeight: FontWeight.bold,
                     letterSpacing: 4,
                   ),
@@ -256,13 +303,13 @@ class _SwipeableCardState extends State<SwipeableCard>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: colorScheme.secondary.withValues(alpha: 0.2),
+                color: colorScheme.secondary.withAlpha(51),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
                 widget.phrase.category!,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: textColor.withValues(alpha: 0.8),
+                      color: textColor.withAlpha(204),
                       fontWeight: FontWeight.w500,
                     ),
               ),
@@ -283,16 +330,14 @@ class _SwipeableCardState extends State<SwipeableCard>
     final baseColor = widget.backgroundColor ??
         (isDark
             ? colorScheme.primaryContainer
-            : colorScheme.primaryContainer.withValues(alpha: 0.95));
+            : colorScheme.primaryContainer.withAlpha(242));
     final textColor = widget.textColor ??
         (isDark
             ? colorScheme.onPrimaryContainer
             : colorScheme.onPrimaryContainer);
 
-    // Interpolate shape based on morph factor
-    final borderRadius = BorderRadius.circular(
-      32 - (morphFactor * 20), // From 32 to 12 radius
-    );
+    // Use ShapeBorder.lerp for organic shape morphing
+    final shape = ExpressiveShapes.lerpShapes(morphFactor);
 
     return GestureDetector(
       onPanStart: _onPanStart,
@@ -305,13 +350,14 @@ class _SwipeableCardState extends State<SwipeableCard>
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 50),
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: _adjustColorForSwipe(baseColor),
-              borderRadius: borderRadius,
-              // Minimal shadow - rely on color for hierarchy (ME3 Expressive)
-              boxShadow: [
+              shape: shape,
+              shadows: [
                 BoxShadow(
-                  color: colorScheme.primary.withValues(alpha: 0.08 + morphFactor * 0.12),
+                  color: colorScheme.primary.withAlpha(
+                    (20 + morphFactor * 30).toInt(),
+                  ),
                   blurRadius: 8 + morphFactor * 12,
                   offset: Offset(0, 4 + morphFactor * 6),
                 ),
@@ -327,13 +373,47 @@ class _SwipeableCardState extends State<SwipeableCard>
 
 /// Helper class for Expressive shape morphing
 class ExpressiveShapes {
-  /// Interpolate between rounded rectangle and circle based on factor (0-1)
+  /// Interpolate between rounded rectangle and organic shape based on factor (0-1)
   static ShapeBorder lerpShapes(double factor) {
     // Start with RoundedRectangleBorder (radius 32)
-    final startRadius = 32.0 - (factor * 24); // Goes from 32 to 8
-
-    return RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(startRadius),
+    final roundedRect = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(32.0 - (factor * 8)),
     );
+
+    // As factor increases, morph toward a more organic shape
+    // Using StadiumBorder for pill-like shape at higher factors
+    final organicShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(32.0 - (factor * 24)),
+    );
+
+    // Lerp between shapes for smooth transition
+    return ShapeBorder.lerp(roundedRect, organicShape, factor)
+        as ShapeBorder;
+  }
+
+  /// Create a continuous border radius that morphs based on drag
+  static BorderRadius morphBorderRadius(double factor) {
+    // Start with uniform 32 radius
+    // As factor increases, create more organic asymmetric radius
+    final baseRadius = 32.0 - (factor * 16);
+    final variation = factor * 8;
+
+    return BorderRadius.only(
+      topLeft: Radius.circular(baseRadius + variation),
+      topRight: Radius.circular(baseRadius - variation * 0.5),
+      bottomLeft: Radius.circular(baseRadius - variation * 0.3),
+      bottomRight: Radius.circular(baseRadius + variation * 0.7),
+    );
+  }
+
+  /// Interpolate between two shape borders with custom tween
+  static ShapeBorder animatedLerp(
+    ShapeBorder from,
+    ShapeBorder to,
+    double progress,
+  ) {
+    // Use smoothstep for more natural easing
+    final smoothProgress = progress * progress * (3 - 2 * progress);
+    return ShapeBorder.lerp(from, to, smoothProgress) as ShapeBorder;
   }
 }

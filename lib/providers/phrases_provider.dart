@@ -115,7 +115,9 @@ class PhrasesProvider extends ChangeNotifier {
       _currentPhrase = phrase;
 
       if (addToList && !_phrases.any((p) => p.id == phrase.id)) {
-        _phrases.insert(0, phrase);
+        // Add to end of list to maintain immutability of visible cards
+        // New phrases will appear as new cards at the end, not replacing current ones
+        _phrases.add(phrase);
       }
 
       _loadingState = PhrasesLoadingState.loaded;
@@ -181,7 +183,8 @@ class PhrasesProvider extends ChangeNotifier {
   /// [phrase] - The phrase to add.
   void addPhrase(NoPhrase phrase) {
     if (!_phrases.any((p) => p.id == phrase.id)) {
-      _phrases.insert(0, phrase);
+      // Add to end to maintain immutability of visible cards
+      _phrases.add(phrase);
       notifyListeners();
     }
   }
