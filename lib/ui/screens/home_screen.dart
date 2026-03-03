@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:app_bar_m3e/app_bar_m3e.dart';
+import 'package:button_m3e/button_m3e.dart';
+import 'package:fab_m3e/fab_m3e.dart';
+import 'package:icon_button_m3e/icon_button_m3e.dart';
+import 'package:loading_indicator_m3e/loading_indicator_m3e.dart';
+import 'package:m3e_design/m3e_design.dart';
 
 import '../../providers/phrases_provider.dart';
 import '../../providers/favorites_provider.dart';
@@ -183,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBarM3E(
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -208,13 +214,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         actions: [
           // Favorites button
-          IconButton(
+          IconButtonM3E(
+            variant: IconButtonM3EVariant.standard,
+            size: IconButtonM3ESize.md,
             icon: const Icon(Icons.favorite_border_rounded),
             onPressed: widget.onNavigateToFavorites,
             tooltip: 'Favoritos',
           ),
           // Refresh button
-          IconButton(
+          IconButtonM3E(
+            variant: IconButtonM3EVariant.standard,
+            size: IconButtonM3ESize.md,
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () {
               context.read<PhrasesProvider>().refresh();
@@ -222,6 +232,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             tooltip: 'Nueva frase',
           ),
         ],
+        centerTitle: true,
+        shapeFamily: AppBarM3EShapeFamily.round,
       ),
       body: Consumer2<PhrasesProvider, ConnectivityProvider>(
         builder: (context, phrasesProvider, connectivityProvider, child) {
@@ -298,10 +310,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
           ),
           const SizedBox(height: 24),
-          FilledButton.icon(
+          ButtonM3E(
             onPressed: _loadPhrases,
             icon: const Icon(Icons.refresh_rounded),
             label: const Text('Cargar frases'),
+            style: ButtonM3EStyle.filled,
           ),
         ],
       ),
@@ -328,11 +341,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Previous button
-              FloatingActionButton.small(
-                heroTag: 'previous',
+              FabM3E(
+                kind: FabM3EKind.surface,
+                size: FabM3ESize.small,
                 onPressed: _goToPreviousPage,
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                child: Icon(
+                icon: Icon(
                   Icons.undo_rounded,
                   color: colorScheme.onSurface,
                 ),
@@ -340,11 +353,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               const SizedBox(width: 16),
               
               // Swipe right (favorite) button
-              FloatingActionButton(
-                heroTag: 'favorite',
+              FabM3E(
+                kind: FabM3EKind.primary,
+                size: FabM3ESize.regular,
                 onPressed: _onSwipeRight,
-                backgroundColor: colorScheme.primary,
-                child: Icon(
+                icon: Icon(
                   Icons.favorite_rounded,
                   color: colorScheme.onPrimary,
                 ),
@@ -352,11 +365,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               const SizedBox(width: 16),
               
               // Swipe left (skip) button
-              FloatingActionButton.small(
-                heroTag: 'skip',
+              FabM3E(
+                kind: FabM3EKind.secondary,
+                size: FabM3ESize.small,
                 onPressed: _onSwipeLeft,
-                backgroundColor: colorScheme.secondaryContainer,
-                child: Icon(
+                icon: Icon(
                   Icons.arrow_forward_rounded,
                   color: colorScheme.onSecondaryContainer,
                 ),
@@ -603,9 +616,7 @@ class LoadingView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          const LoadingIndicatorM3E(),
           const SizedBox(height: 16),
           Text(
             message,
@@ -660,10 +671,11 @@ class ErrorView extends StatelessWidget {
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 24),
-              FilledButton.icon(
+              ButtonM3E(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Reintentar'),
+                style: ButtonM3EStyle.filled,
               ),
             ],
           ],

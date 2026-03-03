@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:provider/provider.dart';
 import 'package:m3e_design/m3e_design.dart';
+import 'package:navigation_bar_m3e/navigation_bar_m3e.dart';
 
 import 'themes/theme_manager.dart';
 import 'providers/theme_provider.dart';
@@ -127,21 +128,23 @@ class _MainNavigationState extends State<MainNavigation> {
         index: _currentIndex,
         children: screens,
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: NavigationBarM3E(
         selectedIndex: _currentIndex,
         onDestinationSelected: _onItemTapped,
+        indicatorStyle: NavBarM3EIndicatorStyle.pill,
+        size: NavBarM3ESize.medium,
         destinations: [
-          NavigationDestination(
+          NavigationDestinationM3E(
             icon: const Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded, color: colorScheme.primary),
             label: 'Inicio',
           ),
-          NavigationDestination(
+          NavigationDestinationM3E(
             icon: const Icon(Icons.favorite_border_rounded),
             selectedIcon: Icon(Icons.favorite_rounded, color: colorScheme.error),
             label: 'Favoritos',
           ),
-          NavigationDestination(
+          NavigationDestinationM3E(
             icon: const Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings_rounded, color: colorScheme.primary),
             label: 'Ajustes',

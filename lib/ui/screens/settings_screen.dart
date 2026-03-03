@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:app_bar_m3e/app_bar_m3e.dart';
+import 'package:button_group_m3e/button_group_m3e.dart';
+import 'package:icon_button_m3e/icon_button_m3e.dart';
+import 'package:m3e_design/m3e_design.dart';
 
 import '../../themes/theme_manager.dart';
 import '../../providers/theme_provider.dart';
@@ -22,12 +26,16 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
+      appBar: AppBarM3E(
+        leading: IconButtonM3E(
+          variant: IconButtonM3EVariant.standard,
+          size: IconButtonM3ESize.md,
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: onBack ?? () => Navigator.of(context).pop(),
         ),
-        title: const Text('Configuración'),
+        titleText: 'Configuración',
+        centerTitle: true,
+        shapeFamily: AppBarM3EShapeFamily.round,
       ),
       body: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -81,6 +89,8 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildThemeSelector(BuildContext context, ThemeProvider themeProvider) {
     final colorScheme = Theme.of(context).colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
     
     // Available themes (excluding Dynamic for the main selector)
     final themes = [
@@ -90,10 +100,15 @@ class SettingsScreen extends StatelessWidget {
     ];
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: m3e.spacing.md),
+      elevation: 0,
+      color: m3e.colors.surfaceContainerHigh,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         children: [
-          // Theme selection as segmented buttons
+          // Theme selection as button group
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -106,20 +121,9 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                SegmentedButton<String>(
-                  selected: {themeProvider.isDynamicColorsEnabled ? 'Dynamic' : themeProvider.selectedPaletteName},
-                  onSelectionChanged: (Set<String> selection) {
-                    final selected = selection.first;
-                    if (selected == 'Dynamic') {
-                      themeProvider.setDynamicColors(true);
-                    } else {
-                      themeProvider.setDynamicColors(false);
-                      themeProvider.setPalette(selected);
-                    }
-                  },
-                  segments: themes.map((theme) {
-                    return ButtonSegment<String>(
-                      value: theme['name'] as String,
+                ButtonGroupM3E(
+                  actions: themes.map((theme) {
+                    return ButtonGroupM3EAction(
                       label: Text(
                         (theme['name'] as String).split(' ').first,
                         style: const TextStyle(fontSize: 12),
@@ -129,12 +133,15 @@ class SettingsScreen extends StatelessWidget {
                         size: 16,
                         color: theme['color'] as Color,
                       ),
+                      onPressed: () {
+                        themeProvider.setDynamicColors(false);
+                        themeProvider.setPalette(theme['name'] as String);
+                      },
                     );
                   }).toList(),
-                  showSelectedIcon: false,
-                  style: ButtonStyle(
-                    visualDensity: VisualDensity.compact,
-                  ),
+                  overflow: ButtonGroupM3EOverflow.scroll,
+                  type: ButtonGroupM3EType.standard,
+                  shape: ButtonGroupM3EShape.round,
                 ),
               ],
             ),
@@ -198,9 +205,16 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildDynamicColorsTile(BuildContext context, ThemeProvider themeProvider) {
     final colorScheme = Theme.of(context).colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
     
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: m3e.spacing.md),
+      elevation: 0,
+      color: m3e.colors.surfaceContainerHigh,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ListTile(
         leading: Container(
           width: 40,
@@ -246,10 +260,17 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildDarkModeTile(BuildContext context, ThemeProvider themeProvider) {
     final colorScheme = Theme.of(context).colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
     final isDark = themeProvider.brightness == Brightness.dark;
     
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: m3e.spacing.md),
+      elevation: 0,
+      color: m3e.colors.surfaceContainerHigh,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         children: [
           ListTile(
@@ -273,26 +294,25 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           
-          // Segmented button for quick switching
+          // Button group for quick switching
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: SegmentedButton<Brightness>(
-              selected: {themeProvider.brightness},
-              onSelectionChanged: (Set<Brightness> selection) {
-                themeProvider.setBrightness(selection.first);
-              },
-              segments: const [
-                ButtonSegment<Brightness>(
-                  value: Brightness.light,
-                  label: Text('Claro'),
-                  icon: Icon(Icons.light_mode_rounded, size: 18),
+            child: ButtonGroupM3E(
+              actions: [
+                ButtonGroupM3EAction(
+                  label: const Text('Claro'),
+                  icon: const Icon(Icons.light_mode_rounded, size: 18),
+                  onPressed: () => themeProvider.setBrightness(Brightness.light),
                 ),
-                ButtonSegment<Brightness>(
-                  value: Brightness.dark,
-                  label: Text('Oscuro'),
-                  icon: Icon(Icons.dark_mode_rounded, size: 18),
+                ButtonGroupM3EAction(
+                  label: const Text('Oscuro'),
+                  icon: const Icon(Icons.dark_mode_rounded, size: 18),
+                  onPressed: () => themeProvider.setBrightness(Brightness.dark),
                 ),
               ],
+              overflow: ButtonGroupM3EOverflow.none,
+              type: ButtonGroupM3EType.standard,
+              shape: ButtonGroupM3EShape.round,
             ),
           ),
         ],
@@ -302,16 +322,18 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildThemeInfo(BuildContext context, ThemeProvider themeProvider) {
     final colorScheme = Theme.of(context).colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
     
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(m3e.spacing.md),
       child: Column(
         children: [
           // Current theme info
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(m3e.spacing.md),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
+              color: m3e.colors.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -351,12 +373,12 @@ class SettingsScreen extends StatelessWidget {
           // Dynamic colors note
           if (themeProvider.isDynamicColorsEnabled)
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(m3e.spacing.sm),
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withOpacity(0.3),
+                color: m3e.colors.primaryContainer.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: colorScheme.primary.withOpacity(0.3),
+                  color: m3e.colors.primary.withOpacity(0.3),
                 ),
               ),
               child: Row(
