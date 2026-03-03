@@ -27,7 +27,7 @@ class RateLimitCard extends StatefulWidget {
 }
 
 class _RateLimitCardState extends State<RateLimitCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _bounceController;
   late Animation<double> _bounceAnimation;
   late AnimationController _shakeController;
@@ -39,6 +39,7 @@ class _RateLimitCardState extends State<RateLimitCard>
   @override
   void initState() {
     super.initState();
+    debugPrint('[RateLimitCard] initState - creating controllers');
     _remainingSeconds = widget.cooldownSeconds;
 
     // Bounce animation for the devil icon
@@ -59,6 +60,7 @@ class _RateLimitCardState extends State<RateLimitCard>
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
+    debugPrint('[RateLimitCard] Controllers created - bounce: $_bounceController, shake: $_shakeController');
 
     _shakeAnimation = Tween<double>(begin: -0.05, end: 0.05).animate(
       CurvedAnimation(
@@ -94,6 +96,7 @@ class _RateLimitCardState extends State<RateLimitCard>
 
   @override
   void dispose() {
+    debugPrint('[RateLimitCard] dispose - disposing controllers');
     _bounceController.dispose();
     _shakeController.dispose();
     _timer?.cancel();

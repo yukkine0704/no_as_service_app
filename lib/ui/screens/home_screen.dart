@@ -33,6 +33,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _currentPage = 0;
   
+  // Track if rate limit card has been shown - keeps it visible even after cooldown
+  bool _hasShownRateLimitCard = false;
+  
   // Animation controller for card transitions
   late AnimationController _cardTransitionController;
   late Animation<double> _nextCardScaleAnimation;
@@ -231,12 +234,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
 
           // Check for rate limit error
-          if (phrasesProvider.hasError && phrasesProvider.errorMessage != null) {
-            final errorMsg = phrasesProvider.errorMessage!.toLowerCase();
-            if (errorMsg.contains('rate limit') || errorMsg.contains('429')) {
-              // Show rate limit card inline
-              return _buildCardSwiper(phrasesProvider, showRateLimit: true);
-            }
+          final bool isRateLimitError = phrasesProvider.hasError &&
+              phrasesProvider.errorMessage != null &&
+              (phrasesProvider.errorMessage!.toLowerCase().contains('rate limit') ||
+               phrasesProvider.errorMessage!.toLowerCase().contains('429'));
+          
+          // Once rate limit is shown, keep it visible until user swipes it away
+          if (isRateLimitError) {
+            _hasShownRateLimitCard = true;
+            debugPrint('[HomeScreen] Rate limit detected, showing card');
+          }
+          
+          // Show rate limit card if it was triggered (even if error clears)
+          if (_hasShownRateLimitCard) {
+            return _buildCardSwiper(phrasesProvider, showRateLimit: true);
           }
 
           // Check for loading state - show skeleton loading
@@ -306,13 +317,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // Swipeable Cards Stack or Rate Limit Card
         Expanded(
           child: showRateLimit
-              ? RateLimitCard(
-                  cooldownSeconds: _rateLimitCooldownSeconds,
-                  onNavigateToFavorites: widget.onNavigateToFavorites,
-                  onCooldownComplete: () {
-                    _loadPhrases();
-                  },
-                )
+              ? _buildSwipeableRateLimitCard()
               : _buildCardStack(phrases, phrasesProvider),
         ),
 
@@ -363,6 +368,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildSwipeableRateLimitCard() {
+    return _SimpleSwipeableCard(
+      child: RateLimitCard(
+        cooldownSeconds: _rateLimitCooldownSeconds,
+        onNavigateToFavorites: widget.onNavigateToFavorites,
+        onCooldownComplete: () {
+          // When cooldown completes, just log it
+          // Card stays visible until user swipes it
+          debugPrint('[HomeScreen] Rate limit cooldown complete');
+        },
+      ),
+      onSwipe: () {
+        // Dismiss rate limit card on swipe (either direction)
+        setState(() {
+          _hasShownRateLimitCard = false;
+        });
+        _loadPhrases();
+      },
+    );
+  }
+
   Widget _buildCardStack(List phrases, PhrasesProvider phrasesProvider) {
     if (phrases.isEmpty || _currentPage >= phrases.length) {
       return const SizedBox.shrink();
@@ -405,17 +431,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         
         // Current card (front) - swipeable
         // Uses AnimatedSwitcher for smooth exit when page changes
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          child: Positioned.fill(
-            key: ValueKey<int>(_currentPage), // Key changes when page changes
+        // Note: Positioned.fill must be OUTSIDE AnimatedSwitcher to avoid ParentDataWidget error
+        Positioned.fill(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
             child: SwipeableCard(
+              key: ValueKey<int>(_currentPage), // Key changes when page changes
               phrase: currentPhrase,
               onSwipeRight: () {
                 _onSwipeRight();
@@ -430,6 +457,133 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A simple swipeable wrapper for the rate limit card
+/// Allows users to swipe away the card in either direction
+class _SimpleSwipeableCard extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onSwipe;
+
+  const _SimpleSwipeableCard({
+    required this.child,
+    required this.onSwipe,
+  });
+
+  @override
+  State<_SimpleSwipeableCard> createState() => _SimpleSwipeableCardState();
+}
+
+class _SimpleSwipeableCardState extends State<_SimpleSwipeableCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  Offset _dragOffset = Offset.zero;
+  bool _isAnimatingOut = false;
+
+  static const double _swipeThreshold = 100.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (_isAnimatingOut) return;
+    setState(() {
+      _dragOffset += details.delta;
+    });
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    if (_isAnimatingOut) return;
+
+    final absOffset = _dragOffset.dx.abs();
+
+    if (absOffset > _swipeThreshold) {
+      _animateOut();
+    } else {
+      _animateBack();
+    }
+  }
+
+  void _animateOut() {
+    _isAnimatingOut = true;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final targetX = _dragOffset.dx > 0 ? screenWidth : -screenWidth;
+
+    // Notify parent immediately so next card can appear
+    widget.onSwipe();
+
+    _controller.duration = const Duration(milliseconds: 200);
+    final startOffset = _dragOffset;
+    final endOffset = Offset(targetX, _dragOffset.dy);
+
+    _controller.reset();
+    _controller.addListener(() {
+      if (mounted) {
+        setState(() {
+          _dragOffset = Offset.lerp(startOffset, endOffset, _controller.value) ?? endOffset;
+        });
+      }
+    });
+    _controller.forward().then((_) {
+      if (mounted) {
+        setState(() {
+          _dragOffset = Offset.zero;
+          _isAnimatingOut = false;
+        });
+      }
+    });
+  }
+
+  void _animateBack() {
+    _controller.duration = const Duration(milliseconds: 300);
+    final startOffset = _dragOffset;
+
+    _controller.reset();
+    _controller.addListener(() {
+      if (mounted) {
+        setState(() {
+          _dragOffset = Offset.lerp(startOffset, Offset.zero, _controller.value) ?? Offset.zero;
+        });
+      }
+    });
+    _controller.forward().then((_) {
+      if (mounted) {
+        setState(() {
+          _dragOffset = Offset.zero;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onPanUpdate: _onPanUpdate,
+      onPanEnd: _onPanEnd,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: _dragOffset,
+            child: child,
+          );
+        },
+        child: widget.child,
+      ),
     );
   }
 }
