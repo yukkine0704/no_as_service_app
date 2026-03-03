@@ -11,6 +11,7 @@ import '../../core/models/no_phrase.dart';
 /// - Spring physics for natural overshoot animations
 /// - Haptic feedback at threshold points
 /// - High chromatic contrast colors
+/// - Optimized rendering with ValueNotifier for smooth 60fps
 class SwipeableCard extends StatefulWidget {
   /// The phrase to display
   final NoPhrase phrase;
@@ -66,12 +67,17 @@ class _SwipeableCardState extends State<SwipeableCard>
   late AnimationController _controller;
   SpringSimulation? _springSimulation;
 
-  // Current drag offset
-  Offset _dragOffset = Offset.zero;
+  // Use ValueNotifier for drag offset to avoid rebuilding during drag
+  final ValueNotifier<Offset> _dragOffsetNotifier = ValueNotifier(Offset.zero);
+  Offset get _dragOffset => _dragOffsetNotifier.value;
+  set _dragOffset(Offset value) => _dragOffsetNotifier.value = value;
 
   // Track if we've triggered haptic feedback for current swipe direction
   bool _hasTriggeredRightHaptic = false;
   bool _hasTriggeredLeftHaptic = false;
+
+  // Track if card is being animated out (to prevent multiple triggers)
+  bool _isAnimatingOut = false;
 
   @override
   void initState() {
@@ -87,31 +93,31 @@ class _SwipeableCardState extends State<SwipeableCard>
   void dispose() {
     _controller.removeListener(_onSpringUpdate);
     _controller.dispose();
+    _dragOffsetNotifier.dispose();
     super.dispose();
   }
 
   void _onSpringUpdate() {
     if (_springSimulation != null && mounted) {
-      setState(() {
-        // The controller value represents time in the spring simulation
-        final t = _controller.value;
-        // Get position from spring simulation at time t
-        final springX = _springSimulation!.x(t);
-        _dragOffset = Offset(springX, _dragOffset.dy);
-      });
+      // Update offset via notifier - doesn't rebuild entire widget tree
+      final t = _controller.value;
+      final springX = _springSimulation!.x(t);
+      _dragOffsetNotifier.value = Offset(springX, _dragOffset.dy);
     }
   }
 
   void _onPanStart(DragStartDetails details) {
+    if (_isAnimatingOut) return; // Prevent interaction during exit animation
     _controller.stop();
     _hasTriggeredRightHaptic = false;
     _hasTriggeredLeftHaptic = false;
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    setState(() {
-      _dragOffset += details.delta;
-    });
+    if (_isAnimatingOut) return;
+    
+    // Update offset via notifier - more efficient than setState
+    _dragOffsetNotifier.value += details.delta;
 
     // Check for haptic feedback at thresholds
     _checkHapticFeedback();
@@ -143,6 +149,8 @@ class _SwipeableCardState extends State<SwipeableCard>
   }
 
   void _onPanEnd(DragEndDetails details) {
+    if (_isAnimatingOut) return;
+    
     final velocity = details.velocity.pixelsPerSecond.dx;
     final absOffset = _dragOffset.dx.abs();
     final absVelocity = velocity.abs();
@@ -163,8 +171,19 @@ class _SwipeableCardState extends State<SwipeableCard>
   }
 
   void _animateOut(bool toRight, double initialVelocity) {
+    if (_isAnimatingOut) return;
+    _isAnimatingOut = true;
+
     final screenWidth = MediaQuery.of(context).size.width;
     final targetX = toRight ? screenWidth * 1.5 : -screenWidth * 1.5;
+
+    // IMPORTANT: Call callbacks IMMEDIATELY, not after animation
+    // This allows the parent to show the next card while this one animates out
+    if (toRight) {
+      widget.onSwipeRight?.call();
+    } else {
+      widget.onSwipeLeft?.call();
+    }
 
     if (widget.useSpringPhysics) {
       // Create spring simulation for natural throw effect
@@ -182,16 +201,12 @@ class _SwipeableCardState extends State<SwipeableCard>
       );
 
       _controller.forward(from: 0).then((_) {
-        if (toRight) {
-          widget.onSwipeRight?.call();
-        } else {
-          widget.onSwipeLeft?.call();
-        }
-        // Reset state after animation
+        // Reset state after animation completes
         if (mounted) {
           setState(() {
             _dragOffset = Offset.zero;
             _springSimulation = null;
+            _isAnimatingOut = false;
           });
         }
       });
@@ -226,27 +241,27 @@ class _SwipeableCardState extends State<SwipeableCard>
   }
 
   /// Calculate morph factor based on drag distance (0.0 to 1.0)
-  double _calculateMorphFactor() {
-    final distance = _dragOffset.distance;
+  double _calculateMorphFactor(Offset offset) {
+    final distance = offset.distance;
     final maxDistance = MediaQuery.of(context).size.width * 0.5;
     return (distance / maxDistance).clamp(0.0, 1.0);
   }
 
   /// Calculate rotation based on horizontal drag
-  double _calculateRotation() {
-    return _dragOffset.dx / 1000 * 0.3; // Subtle rotation
+  double _calculateRotation(Offset offset) {
+    return offset.dx / 1000 * 0.3; // Subtle rotation
   }
 
-  Color _adjustColorForSwipe(Color baseColor) {
+  Color _adjustColorForSwipe(Color baseColor, Offset offset) {
     // Subtle color shift based on swipe direction
-    if (_dragOffset.dx > _swipeThreshold) {
+    if (offset.dx > _swipeThreshold) {
       // Swiping right - slightly warm (favorite)
       return Color.lerp(
         baseColor,
         Colors.redAccent.withAlpha(25),
         0.3,
       )!;
-    } else if (_dragOffset.dx < -_swipeThreshold) {
+    } else if (offset.dx < -_swipeThreshold) {
       // Swiping left - slightly cool (next)
       return Color.lerp(
         baseColor,
@@ -323,7 +338,6 @@ class _SwipeableCardState extends State<SwipeableCard>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final morphFactor = _calculateMorphFactor();
 
     // Determine colors based on swipe direction
     final isDark = theme.brightness == Brightness.dark;
@@ -336,37 +350,45 @@ class _SwipeableCardState extends State<SwipeableCard>
             ? colorScheme.onPrimaryContainer
             : colorScheme.onPrimaryContainer);
 
-    // Use ShapeBorder.lerp for organic shape morphing
-    final shape = ExpressiveShapes.lerpShapes(morphFactor);
+    return ValueListenableBuilder<Offset>(
+      valueListenable: _dragOffsetNotifier,
+      builder: (context, dragOffset, child) {
+        final morphFactor = _calculateMorphFactor(dragOffset);
+        final shape = ExpressiveShapes.lerpShapes(morphFactor);
 
-    return GestureDetector(
-      onPanStart: _onPanStart,
-      onPanUpdate: _onPanUpdate,
-      onPanEnd: _onPanEnd,
-      child: Transform.translate(
-        offset: _dragOffset,
-        child: Transform.rotate(
-          angle: _calculateRotation(),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 50),
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: ShapeDecoration(
-              color: _adjustColorForSwipe(baseColor),
-              shape: shape,
-              shadows: [
-                BoxShadow(
-                  color: colorScheme.primary.withAlpha(
-                    (20 + morphFactor * 30).toInt(),
+        return GestureDetector(
+          onPanStart: _onPanStart,
+          onPanUpdate: _onPanUpdate,
+          onPanEnd: _onPanEnd,
+          child: Transform.translate(
+            offset: dragOffset,
+            child: Transform.rotate(
+              angle: _calculateRotation(dragOffset),
+              child: RepaintBoundary(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 50),
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: ShapeDecoration(
+                    color: _adjustColorForSwipe(baseColor, dragOffset),
+                    shape: shape,
+                    shadows: [
+                      BoxShadow(
+                        color: colorScheme.primary.withAlpha(
+                          (20 + morphFactor * 30).toInt(),
+                        ),
+                        blurRadius: 8 + morphFactor * 12,
+                        offset: Offset(0, 4 + morphFactor * 6),
+                      ),
+                    ],
                   ),
-                  blurRadius: 8 + morphFactor * 12,
-                  offset: Offset(0, 4 + morphFactor * 6),
+                  child: child,
                 ),
-              ],
+              ),
             ),
-            child: _buildCardContent(textColor, colorScheme),
           ),
-        ),
-      ),
+        );
+      },
+      child: _buildCardContent(textColor, colorScheme),
     );
   }
 }

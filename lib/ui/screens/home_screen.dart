@@ -12,10 +12,11 @@ import '../widgets/skeleton_card.dart';
 /// Home screen with card swiper for displaying "No" phrases.
 ///
 /// Features:
-/// - Swipeable cards
+/// - Swipeable cards with smooth transitions
 /// - Swipe right to add to favorites
 /// - Swipe left to load next phrase
 /// - Loading and error states
+/// - Smooth card entry/exit animations
 class HomeScreen extends StatefulWidget {
   /// Callback to navigate to favorites
   final VoidCallback? onNavigateToFavorites;
@@ -29,8 +30,13 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _currentPage = 0;
+  
+  // Animation controller for card transitions
+  late AnimationController _cardTransitionController;
+  late Animation<double> _nextCardScaleAnimation;
+  late Animation<double> _nextCardOpacityAnimation;
 
   @override
   void initState() {
@@ -39,6 +45,37 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadPhrases();
     });
+    
+    // Initialize card transition animations
+    _cardTransitionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    
+    _nextCardScaleAnimation = Tween<double>(
+      begin: 0.9,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _cardTransitionController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    _nextCardOpacityAnimation = Tween<double>(
+      begin: 0.3,
+      end: 0.5,
+    ).animate(CurvedAnimation(
+      parent: _cardTransitionController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    // Start with the "next card" visible but subtle
+    _cardTransitionController.value = 1.0;
+  }
+
+  @override
+  void dispose() {
+    _cardTransitionController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPhrases() async {
@@ -59,10 +96,16 @@ class _HomeScreenState extends State<HomeScreen> {
       _prefetchPhrases();
     }
     
+    // Animate transition
+    _cardTransitionController.value = 0.0;
+    
     // Go to next card
     if (_currentPage < phrases.length - 1) {
       setState(() => _currentPage++);
     }
+    
+    // Animate next card into position
+    _cardTransitionController.animateTo(1.0, duration: const Duration(milliseconds: 400));
   }
 
   /// Prefetch additional phrases to ensure smooth swiping
@@ -107,10 +150,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
+      // Animate transition
+      _cardTransitionController.value = 0.0;
+
       // Navigate to next card after a short delay to show the animation
-      Future.delayed(const Duration(milliseconds: 300), () {
+      Future.delayed(const Duration(milliseconds: 200), () {
         if (mounted && _currentPage < phrases.length - 1) {
           setState(() => _currentPage++);
+          // Animate next card into position
+          _cardTransitionController.animateTo(1.0, duration: const Duration(milliseconds: 400));
           // Prefetch more phrases if needed
           if (phrases.length - _currentPage < 5) {
             _prefetchPhrases();
@@ -329,40 +377,56 @@ class _HomeScreenState extends State<HomeScreen> {
       alignment: Alignment.center,
       children: [
         // Next card (behind) - visible when current card is being swiped
+        // Uses AnimatedBuilder for smooth entry animation
         if (nextPhrase != null)
-          Positioned.fill(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Transform.scale(
-                scale: 0.95,
-                child: Opacity(
-                  opacity: 0.5,
-                  child: IgnorePointer(
-                    child: SwipeableCard(
-                      phrase: nextPhrase,
-                      onSwipeRight: () {},
-                      onSwipeLeft: () {},
+          AnimatedBuilder(
+            animation: _cardTransitionController,
+            builder: (context, child) {
+              return Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  child: Transform.scale(
+                    scale: _nextCardScaleAnimation.value,
+                    child: Opacity(
+                      opacity: _nextCardOpacityAnimation.value,
+                      child: IgnorePointer(
+                        child: SwipeableCard(
+                          phrase: nextPhrase,
+                          onSwipeRight: () {},
+                          onSwipeLeft: () {},
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         
         // Current card (front) - swipeable
-        Positioned.fill(
-          child: SwipeableCard(
-            key: ValueKey('${currentPhrase.id}_$_currentPage'),
-            phrase: currentPhrase,
-            onSwipeRight: () {
-              _onSwipeRight();
-            },
-            onSwipeLeft: () {
-              _onSwipeLeft();
-            },
-            onSwipeCancel: () {
-              // Card returned to center - no action needed
-            },
+        // Uses AnimatedSwitcher for smooth exit when page changes
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+          child: Positioned.fill(
+            key: ValueKey<int>(_currentPage), // Key changes when page changes
+            child: SwipeableCard(
+              phrase: currentPhrase,
+              onSwipeRight: () {
+                _onSwipeRight();
+              },
+              onSwipeLeft: () {
+                _onSwipeLeft();
+              },
+              onSwipeCancel: () {
+                // Card returned to center - no action needed
+              },
+            ),
           ),
         ),
       ],
