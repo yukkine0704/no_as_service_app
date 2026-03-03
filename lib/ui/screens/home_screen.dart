@@ -6,6 +6,7 @@ import '../../providers/favorites_provider.dart';
 import '../../providers/connectivity_provider.dart';
 import '../widgets/swipeable_card.dart';
 import '../widgets/error_offline_view.dart';
+import '../widgets/rate_limit_card.dart';
 
 /// Home screen with card swiper for displaying "No" phrases.
 ///
@@ -28,8 +29,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final PageController _pageController = PageController(viewportFraction: 0.9);
-  final int _currentPage = 0;
+  int _currentPage = 0;
 
   @override
   void initState() {
@@ -40,12 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
   Future<void> _loadPhrases() async {
     final phrasesProvider = context.read<PhrasesProvider>();
     if (phrasesProvider.phrases.isEmpty) {
@@ -53,25 +47,33 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  static const int _rateLimitCooldownSeconds = 60;
+
   void _onSwipeLeft() {
     final phrasesProvider = context.read<PhrasesProvider>();
     final phrases = phrasesProvider.phrases;
     
-    // Load more phrases if running low
-    if (phrases.length - _currentPage < 3) {
-      phrasesProvider.fetchRandomPhrase();
+    // Load more phrases if running low (prefetch for smooth experience)
+    if (phrases.length - _currentPage < 5) {
+      _prefetchPhrases();
     }
     
-    // Go to next page
+    // Go to next card
     if (_currentPage < phrases.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      setState(() => _currentPage++);
     }
   }
 
-  void _onSwipeRight() {
+  /// Prefetch additional phrases to ensure smooth swiping
+  Future<void> _prefetchPhrases() async {
+    final phrasesProvider = context.read<PhrasesProvider>();
+    // Fetch up to 4 phrases in the background
+    for (int i = 0; i < 4; i++) {
+      phrasesProvider.fetchRandomPhrase();
+    }
+  }
+
+  void _onSwipeRight() async {
     final phrasesProvider = context.read<PhrasesProvider>();
     final favoritesProvider = context.read<FavoritesProvider>();
     final phrases = phrasesProvider.phrases;
@@ -81,8 +83,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final phrase = phrases[_currentPage];
 
     // Add to favorites
-    favoritesProvider.addFavorite(phrase);
-    if (mounted) {
+    final success = await favoritesProvider.addFavorite(phrase);
+
+    if (mounted && success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -102,15 +105,23 @@ class _HomeScreenState extends State<HomeScreen> {
           duration: const Duration(seconds: 2),
         ),
       );
+
+      // Navigate to next card after a short delay to show the animation
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted && _currentPage < phrases.length - 1) {
+          setState(() => _currentPage++);
+          // Prefetch more phrases if needed
+          if (phrases.length - _currentPage < 5) {
+            _prefetchPhrases();
+          }
+        }
+      });
     }
   }
 
   void _goToPreviousPage() {
     if (_currentPage > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      setState(() => _currentPage--);
     }
   }
 
@@ -170,6 +181,15 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
+          // Check for rate limit error
+          if (phrasesProvider.hasError && phrasesProvider.errorMessage != null) {
+            final errorMsg = phrasesProvider.errorMessage!.toLowerCase();
+            if (errorMsg.contains('rate limit') || errorMsg.contains('429')) {
+              // Show rate limit card inline
+              return _buildCardSwiper(phrasesProvider, showRateLimit: true);
+            }
+          }
+
           // Check for loading state
           if (phrasesProvider.isLoading && phrasesProvider.phrases.isEmpty) {
             return const LoadingView(
@@ -177,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          // Check for error state
+          // Check for error state (non-rate-limit)
           if (phrasesProvider.hasError && phrasesProvider.phrases.isEmpty) {
             return ErrorView(
               message: phrasesProvider.errorMessage ?? 'Error desconocido',
@@ -191,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           // Build card swiper
-          return _buildCardSwiper(phrasesProvider);
+          return _buildCardSwiper(phrasesProvider, showRateLimit: false);
         },
       ),
     );
@@ -230,7 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCardSwiper(PhrasesProvider phrasesProvider) {
+  Widget _buildCardSwiper(PhrasesProvider phrasesProvider, {bool showRateLimit = false}) {
     final phrases = phrasesProvider.phrases;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -288,9 +308,17 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // Swipeable Cards Stack
+        // Swipeable Cards Stack or Rate Limit Card
         Expanded(
-          child: _buildCardStack(phrases, phrasesProvider),
+          child: showRateLimit
+              ? RateLimitCard(
+                  cooldownSeconds: _rateLimitCooldownSeconds,
+                  onNavigateToFavorites: widget.onNavigateToFavorites,
+                  onCooldownComplete: () {
+                    _loadPhrases();
+                  },
+                )
+              : _buildCardStack(phrases, phrasesProvider),
         ),
 
         // Bottom action buttons
@@ -353,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Next card (behind)
+        // Next card (behind) - visible when current card is being swiped
         if (nextPhrase != null)
           Positioned.fill(
             child: Padding(
@@ -362,20 +390,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 scale: 0.95,
                 child: Opacity(
                   opacity: 0.5,
-                  child: SwipeableCard(
-                    phrase: nextPhrase,
-                    onSwipeRight: () {},
-                    onSwipeLeft: () {},
+                  child: IgnorePointer(
+                    child: SwipeableCard(
+                      phrase: nextPhrase,
+                      onSwipeRight: () {},
+                      onSwipeLeft: () {},
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         
-        // Current card (front)
+        // Current card (front) - swipeable
         Positioned.fill(
           child: SwipeableCard(
-            key: ValueKey(currentPhrase.id),
+            key: ValueKey('${currentPhrase.id}_$_currentPage'),
             phrase: currentPhrase,
             onSwipeRight: () {
               _onSwipeRight();
