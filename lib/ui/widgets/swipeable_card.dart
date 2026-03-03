@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/physics.dart';
+import 'package:m3e_design/m3e_design.dart' as m3e_design;
 
 import '../../core/models/no_phrase.dart';
 
@@ -272,18 +273,21 @@ class _SwipeableCardState extends State<SwipeableCard>
     return baseColor;
   }
 
-  Widget _buildCardContent(Color textColor, ColorScheme colorScheme) {
+  Widget _buildCardContent(Color textColor, ColorScheme colorScheme, m3e_design.M3ETheme m3e) {
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(m3e.spacing.xl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // NO prefix with emphasis
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            padding: EdgeInsets.symmetric(
+              horizontal: m3e.spacing.lg,
+              vertical: m3e.spacing.xs,
+            ),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withAlpha(38),
-              borderRadius: BorderRadius.circular(20),
+              color: m3e.colors.primary.withAlpha(38),
+              borderRadius: BorderRadius.circular(m3e.spacing.lg),
             ),
             child: Text(
               'NO',
@@ -294,7 +298,7 @@ class _SwipeableCardState extends State<SwipeableCard>
                   ),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: m3e.spacing.lg),
 
           // Main phrase text
           Expanded(
@@ -311,15 +315,18 @@ class _SwipeableCardState extends State<SwipeableCard>
             ),
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: m3e.spacing.md),
 
           // Category tag
           if (widget.phrase.category != null)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: EdgeInsets.symmetric(
+                horizontal: m3e.spacing.md,
+                vertical: 6,
+              ),
               decoration: BoxDecoration(
-                color: colorScheme.secondary.withAlpha(51),
-                borderRadius: BorderRadius.circular(16),
+                color: m3e.colors.secondary.withAlpha(51),
+                borderRadius: BorderRadius.circular(m3e.spacing.lg),
               ),
               child: Text(
                 widget.phrase.category!,
@@ -338,17 +345,19 @@ class _SwipeableCardState extends State<SwipeableCard>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final m3e = Theme.of(context).extension<m3e_design.M3ETheme>() ??
+                m3e_design.M3ETheme.defaults(colorScheme);
 
     // Determine colors based on swipe direction
     final isDark = theme.brightness == Brightness.dark;
     final baseColor = widget.backgroundColor ??
         (isDark
-            ? colorScheme.primaryContainer
-            : colorScheme.primaryContainer.withAlpha(242));
+            ? m3e.colors.primaryContainer
+            : m3e.colors.primaryContainer.withAlpha(242));
     final textColor = widget.textColor ??
         (isDark
-            ? colorScheme.onPrimaryContainer
-            : colorScheme.onPrimaryContainer);
+            ? m3e.colors.onPrimaryContainer
+            : m3e.colors.onPrimaryContainer);
 
     return ValueListenableBuilder<Offset>(
       valueListenable: _dragOffsetNotifier,
@@ -367,13 +376,16 @@ class _SwipeableCardState extends State<SwipeableCard>
               child: RepaintBoundary(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 50),
-                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  margin: EdgeInsets.symmetric(
+                    horizontal: m3e.spacing.lg,
+                    vertical: m3e.spacing.md,
+                  ),
                   decoration: ShapeDecoration(
                     color: _adjustColorForSwipe(baseColor, dragOffset),
                     shape: shape,
                     shadows: [
                       BoxShadow(
-                        color: colorScheme.primary.withAlpha(
+                        color: m3e.colors.primary.withAlpha(
                           (20 + morphFactor * 30).toInt(),
                         ),
                         blurRadius: 8 + morphFactor * 12,
@@ -388,7 +400,7 @@ class _SwipeableCardState extends State<SwipeableCard>
           ),
         );
       },
-      child: _buildCardContent(textColor, colorScheme),
+      child: _buildCardContent(textColor, colorScheme, m3e),
     );
   }
 }
@@ -397,15 +409,16 @@ class _SwipeableCardState extends State<SwipeableCard>
 class ExpressiveShapes {
   /// Interpolate between rounded rectangle and organic shape based on factor (0-1)
   static ShapeBorder lerpShapes(double factor) {
-    // Start with RoundedRectangleBorder (radius 32)
+    // Start with RoundedRectangleBorder (radius 32 - M3E xl spacing)
+    const baseRadius = 32.0;
     final roundedRect = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(32.0 - (factor * 8)),
+      borderRadius: BorderRadius.circular(baseRadius - (factor * 8)),
     );
 
     // As factor increases, morph toward a more organic shape
     // Using StadiumBorder for pill-like shape at higher factors
     final organicShape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(32.0 - (factor * 24)),
+      borderRadius: BorderRadius.circular(baseRadius - (factor * 24)),
     );
 
     // Lerp between shapes for smooth transition
@@ -415,16 +428,17 @@ class ExpressiveShapes {
 
   /// Create a continuous border radius that morphs based on drag
   static BorderRadius morphBorderRadius(double factor) {
-    // Start with uniform 32 radius
+    // Start with uniform 32 radius (M3E xl spacing)
     // As factor increases, create more organic asymmetric radius
-    final baseRadius = 32.0 - (factor * 16);
+    const baseRadius = 32.0;
+    final adjustedRadius = baseRadius - (factor * 16);
     final variation = factor * 8;
 
     return BorderRadius.only(
-      topLeft: Radius.circular(baseRadius + variation),
-      topRight: Radius.circular(baseRadius - variation * 0.5),
-      bottomLeft: Radius.circular(baseRadius - variation * 0.3),
-      bottomRight: Radius.circular(baseRadius + variation * 0.7),
+      topLeft: Radius.circular(adjustedRadius + variation),
+      topRight: Radius.circular(adjustedRadius - variation * 0.5),
+      bottomLeft: Radius.circular(adjustedRadius - variation * 0.3),
+      bottomRight: Radius.circular(adjustedRadius + variation * 0.7),
     );
   }
 

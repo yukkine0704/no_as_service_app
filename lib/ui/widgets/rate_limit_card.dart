@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:button_m3e/button_m3e.dart';
+import 'package:m3e_design/m3e_design.dart';
 
 /// An animated rate limit card with playful/mocking design.
 ///
@@ -107,43 +109,48 @@ class _RateLimitCardState extends State<RateLimitCard>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      margin: EdgeInsets.symmetric(
+        horizontal: m3e.spacing.lg,
+        vertical: m3e.spacing.md,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            colorScheme.errorContainer,
-            colorScheme.tertiaryContainer.withOpacity(0.8),
+            m3e.colors.errorContainer,
+            m3e.colors.tertiaryContainer.withOpacity(0.8),
           ],
         ),
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(m3e.spacing.xl),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.error.withOpacity(0.3),
+            color: m3e.colors.error.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(m3e.spacing.xl),
         child: Stack(
           children: [
             // Background pattern
             Positioned.fill(
               child: CustomPaint(
                 painter: _MischiefPatternPainter(
-                  color: colorScheme.error.withOpacity(0.05),
+                  color: m3e.colors.error.withOpacity(0.05),
                 ),
               ),
             ),
 
             // Main content
             Padding(
-              padding: const EdgeInsets.all(32),
+              padding: EdgeInsets.all(m3e.spacing.xl),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -166,11 +173,11 @@ class _RateLimitCardState extends State<RateLimitCard>
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: colorScheme.error.withOpacity(0.2),
+                        color: m3e.colors.error.withOpacity(0.2),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: colorScheme.error.withOpacity(0.3),
+                            color: m3e.colors.error.withOpacity(0.3),
                             blurRadius: 15,
                             spreadRadius: 2,
                           ),
@@ -179,50 +186,53 @@ class _RateLimitCardState extends State<RateLimitCard>
                       child: Icon(
                         Icons.sentiment_very_dissatisfied_rounded,
                         size: 56,
-                        color: colorScheme.error,
+                        color: m3e.colors.error,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: m3e.spacing.xl),
 
                   // Main message
                   Text(
                     '¡Alto ahí!',
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: colorScheme.error,
+                      color: m3e.colors.error,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: m3e.spacing.sm),
 
                   // Mocking subtitle
                   Text(
                     '¿Tantas negativas necesitas?',
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.8),
+                      color: m3e.colors.onSurface.withOpacity(0.8),
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: m3e.spacing.xs),
 
                   Text(
                     'Has alcanzado el límite de 120 solicitudes',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.6),
+                      color: m3e.colors.onSurface.withOpacity(0.6),
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: m3e.spacing.xl),
 
                   // Countdown timer
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: m3e.spacing.xl,
+                      vertical: m3e.spacing.md,
+                    ),
                     decoration: BoxDecoration(
-                      color: colorScheme.surface.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
+                      color: m3e.colors.surface.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(m3e.spacing.lg),
                       boxShadow: [
                         BoxShadow(
-                          color: colorScheme.error.withOpacity(0.2),
+                          color: m3e.colors.error.withOpacity(0.2),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -233,37 +243,30 @@ class _RateLimitCardState extends State<RateLimitCard>
                         Text(
                           'Espera un poco...',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.6),
+                            color: m3e.colors.onSurface.withOpacity(0.6),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: m3e.spacing.xs),
                         Text(
                           _formattedTime,
                           style: theme.textTheme.displayLarge?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: colorScheme.error,
+                            color: m3e.colors.error,
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: m3e.spacing.lg),
 
                   // Action button
                   if (widget.onNavigateToFavorites != null)
-                    FilledButton.icon(
+                    ButtonM3E(
+                      style: ButtonM3EStyle.filled,
                       onPressed: widget.onNavigateToFavorites,
                       icon: const Icon(Icons.favorite_rounded),
                       label: const Text('Ver mis favoritos'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
                     ),
                 ],
               ),

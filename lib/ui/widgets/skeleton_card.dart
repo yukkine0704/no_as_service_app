@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:m3e_design/m3e_design.dart';
 
 /// Skeleton card widget for loading states.
 ///
@@ -33,23 +34,28 @@ class _SkeletonCardState extends State<SkeletonCard>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
 
     return AnimatedBuilder(
       animation: _shimmerController,
       builder: (context, child) {
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          margin: EdgeInsets.symmetric(
+            horizontal: m3e.spacing.lg,
+            vertical: m3e.spacing.md,
+          ),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(32),
+            color: m3e.colors.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(m3e.spacing.xl),
           ),
           child: ShaderMask(
             shaderCallback: (bounds) {
               return LinearGradient(
                 colors: [
-                  colorScheme.surfaceContainerHighest,
-                  colorScheme.surfaceContainerHighest.withAlpha(204),
-                  colorScheme.surfaceContainerHighest,
+                  m3e.colors.surfaceContainerHighest,
+                  m3e.colors.surfaceContainerHighest.withAlpha(204),
+                  m3e.colors.surfaceContainerHighest,
                 ],
                 stops: const [0.0, 0.5, 1.0],
                 begin: Alignment.topLeft,
@@ -60,7 +66,7 @@ class _SkeletonCardState extends State<SkeletonCard>
               ).createShader(bounds);
             },
             child: Padding(
-              padding: const EdgeInsets.all(32),
+              padding: EdgeInsets.all(m3e.spacing.xl),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -69,11 +75,11 @@ class _SkeletonCardState extends State<SkeletonCard>
                     width: 80,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withAlpha(38),
-                      borderRadius: BorderRadius.circular(20),
+                      color: m3e.colors.primary.withAlpha(38),
+                      borderRadius: BorderRadius.circular(m3e.spacing.lg),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: m3e.spacing.lg),
 
                   // Main phrase skeleton - multiple lines
                   Expanded(
@@ -86,28 +92,28 @@ class _SkeletonCardState extends State<SkeletonCard>
                             width: double.infinity,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: colorScheme.onSurface.withAlpha(26),
-                              borderRadius: BorderRadius.circular(8),
+                              color: m3e.colors.onSurface.withAlpha(26),
+                              borderRadius: BorderRadius.circular(m3e.spacing.xs),
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: m3e.spacing.md),
                           // Second line (shorter)
                           Container(
                             width: MediaQuery.of(context).size.width * 0.6,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: colorScheme.onSurface.withAlpha(26),
-                              borderRadius: BorderRadius.circular(8),
+                              color: m3e.colors.onSurface.withAlpha(26),
+                              borderRadius: BorderRadius.circular(m3e.spacing.xs),
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: m3e.spacing.md),
                           // Third line (even shorter)
                           Container(
                             width: MediaQuery.of(context).size.width * 0.4,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: colorScheme.onSurface.withAlpha(26),
-                              borderRadius: BorderRadius.circular(8),
+                              color: m3e.colors.onSurface.withAlpha(26),
+                              borderRadius: BorderRadius.circular(m3e.spacing.xs),
                             ),
                           ),
                         ],
@@ -115,15 +121,15 @@ class _SkeletonCardState extends State<SkeletonCard>
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  SizedBox(height: m3e.spacing.md),
 
                   // Category tag skeleton
                   Container(
                     width: 100,
                     height: 28,
                     decoration: BoxDecoration(
-                      color: colorScheme.secondary.withAlpha(51),
-                      borderRadius: BorderRadius.circular(16),
+                      color: m3e.colors.secondary.withAlpha(51),
+                      borderRadius: BorderRadius.circular(m3e.spacing.lg),
                     ),
                   ),
                 ],
@@ -160,12 +166,17 @@ class SkeletonLoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
 
     return Column(
       children: [
         // Instructions placeholder
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: m3e.spacing.lg,
+            vertical: m3e.spacing.xs,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -173,7 +184,7 @@ class SkeletonLoadingView extends StatelessWidget {
                 width: 80,
                 height: 16,
                 decoration: BoxDecoration(
-                  color: colorScheme.outline.withAlpha(51),
+                  color: m3e.colors.outline.withAlpha(51),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -181,7 +192,7 @@ class SkeletonLoadingView extends StatelessWidget {
                 width: 60,
                 height: 16,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withAlpha(51),
+                  color: m3e.colors.primary.withAlpha(51),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -189,7 +200,7 @@ class SkeletonLoadingView extends StatelessWidget {
                 width: 80,
                 height: 16,
                 decoration: BoxDecoration(
-                  color: colorScheme.outline.withAlpha(51),
+                  color: m3e.colors.outline.withAlpha(51),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -205,15 +216,18 @@ class SkeletonLoadingView extends StatelessWidget {
               // Background card skeleton
               Positioned.fill(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: m3e.spacing.lg,
+                    vertical: m3e.spacing.md,
+                  ),
                   child: Transform.scale(
                     scale: 0.95,
                     child: Opacity(
                       opacity: 0.5,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(32),
+                          color: m3e.colors.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(m3e.spacing.xl),
                         ),
                       ),
                     ),
@@ -231,7 +245,7 @@ class SkeletonLoadingView extends StatelessWidget {
 
         // Bottom buttons skeleton
         Padding(
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: EdgeInsets.only(bottom: m3e.spacing.lg),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -240,29 +254,29 @@ class SkeletonLoadingView extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
+                  color: m3e.colors.surfaceContainerHighest,
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: m3e.spacing.md),
 
               // Favorite button skeleton
               Container(
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withAlpha(102),
+                  color: m3e.colors.primary.withAlpha(102),
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: m3e.spacing.md),
 
               // Skip button skeleton
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: colorScheme.secondaryContainer.withAlpha(153),
+                  color: m3e.colors.secondaryContainer.withAlpha(153),
                   shape: BoxShape.circle,
                 ),
               ),

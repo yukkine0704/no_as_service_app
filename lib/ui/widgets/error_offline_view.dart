@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:button_m3e/button_m3e.dart';
+import 'package:loading_indicator_m3e/loading_indicator_m3e.dart';
+import 'package:m3e_design/m3e_design.dart';
 
 /// An animated offline error view with playful design.
 ///
@@ -69,10 +72,12 @@ class _ErrorOfflineViewState extends State<ErrorOfflineView>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(m3e.spacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -92,11 +97,11 @@ class _ErrorOfflineViewState extends State<ErrorOfflineView>
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  color: colorScheme.errorContainer,
+                  color: m3e.colors.errorContainer,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: colorScheme.error.withOpacity(0.2),
+                      color: m3e.colors.error.withOpacity(0.2),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -105,40 +110,40 @@ class _ErrorOfflineViewState extends State<ErrorOfflineView>
                 child: Icon(
                   Icons.wifi_off_rounded,
                   size: 60,
-                  color: colorScheme.onErrorContainer,
+                  color: m3e.colors.onErrorContainer,
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: m3e.spacing.xl),
 
             // Main error message
             Text(
               '¡Ups!',
               style: theme.textTheme.headlineLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: colorScheme.error,
+                color: m3e.colors.error,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: m3e.spacing.sm),
 
             // Secondary message
             Text(
               widget.message ?? 'Parece que el mundo quiere que digas que sí',
               style: theme.textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.7),
+                color: m3e.colors.onSurface.withOpacity(0.7),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: m3e.spacing.xs),
             
             Text(
               'Verifica tu conexión a internet',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.5),
+                color: m3e.colors.onSurface.withOpacity(0.5),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: m3e.spacing.xxl),
 
             // Action buttons
             Row(
@@ -146,32 +151,22 @@ class _ErrorOfflineViewState extends State<ErrorOfflineView>
               children: [
                 // Retry button
                 if (widget.onRetry != null)
-                  OutlinedButton.icon(
+                  ButtonM3E(
+                    style: ButtonM3EStyle.outlined,
                     onPressed: widget.onRetry,
                     icon: const Icon(Icons.refresh_rounded),
                     label: const Text('Reintentar'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
                   ),
                 if (widget.onRetry != null && widget.onNavigateToFavorites != null)
-                  const SizedBox(width: 16),
+                  SizedBox(width: m3e.spacing.md),
                 
                 // Navigate to favorites button
                 if (widget.onNavigateToFavorites != null)
-                  FilledButton.icon(
+                  ButtonM3E(
+                    style: ButtonM3EStyle.filled,
                     onPressed: widget.onNavigateToFavorites,
                     icon: const Icon(Icons.favorite_rounded),
                     label: const Text('Mis Favoritos'),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
                   ),
               ],
             ),
@@ -200,10 +195,12 @@ class ErrorView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(m3e.spacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -212,16 +209,16 @@ class ErrorView extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: colorScheme.errorContainer,
+                color: m3e.colors.errorContainer,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.error_outline_rounded,
                 size: 40,
-                color: colorScheme.onErrorContainer,
+                color: m3e.colors.onErrorContainer,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: m3e.spacing.lg),
 
             // Error message
             Text(
@@ -230,19 +227,20 @@ class ErrorView extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: m3e.spacing.xs),
             Text(
               message,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
+                color: m3e.colors.onSurface.withOpacity(0.6),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: m3e.spacing.lg),
 
             // Retry button
             if (onRetry != null)
-              FilledButton.icon(
+              ButtonM3E(
+                style: ButtonM3EStyle.filled,
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Reintentar'),
@@ -268,21 +266,22 @@ class LoadingView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
 
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: colorScheme.primary,
-            strokeWidth: 3,
+          LoadingIndicatorM3E(
+            color: m3e.colors.primary,
           ),
           if (message != null) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: m3e.spacing.md),
             Text(
               message!,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
+                color: m3e.colors.onSurface.withOpacity(0.6),
               ),
             ),
           ],
