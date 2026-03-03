@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:app_bar_m3e/app_bar_m3e.dart';
+import 'package:button_m3e/button_m3e.dart';
+import 'package:icon_button_m3e/icon_button_m3e.dart';
+import 'package:loading_indicator_m3e/loading_indicator_m3e.dart';
+import 'package:m3e_design/m3e_design.dart';
 
 import '../../providers/favorites_provider.dart';
 import '../widgets/no_card.dart';
@@ -59,19 +64,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        icon: const Icon(Icons.delete_outline),
         title: const Text('Eliminar de favoritos'),
         content: Text('¿Estás seguro de que quieres eliminar "$phrase" de favoritos?'),
         actions: [
-          TextButton(
+          ButtonM3E(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            label: const Text('Cancelar'),
+            style: ButtonM3EStyle.text,
           ),
-          FilledButton(
+          ButtonM3E(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Eliminar'),
+            label: const Text('Eliminar'),
+            style: ButtonM3EStyle.filled,
           ),
         ],
       ),
@@ -104,19 +109,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        icon: const Icon(Icons.delete_sweep),
         title: const Text('Eliminar todos los favoritos'),
         content: const Text('¿Estás seguro de que quieres eliminar todos los favoritos? Esta acción no se puede deshacer.'),
         actions: [
-          TextButton(
+          ButtonM3E(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            label: const Text('Cancelar'),
+            style: ButtonM3EStyle.text,
           ),
-          FilledButton(
+          ButtonM3E(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Eliminar todo'),
+            label: const Text('Eliminar todo'),
+            style: ButtonM3EStyle.filled,
           ),
         ],
       ),
@@ -149,10 +154,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
+      appBar: AppBarM3E(
+        leading: IconButtonM3E(
+          variant: IconButtonM3EVariant.standard,
+          size: IconButtonM3ESize.md,
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
         ),
@@ -172,7 +181,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           Consumer<FavoritesProvider>(
             builder: (context, favoritesProvider, child) {
               if (favoritesProvider.isEmpty) return const SizedBox.shrink();
-              return IconButton(
+              return IconButtonM3E(
+                variant: IconButtonM3EVariant.standard,
+                size: IconButtonM3ESize.md,
                 icon: const Icon(Icons.delete_sweep_rounded),
                 onPressed: _clearAllFavorites,
                 tooltip: 'Eliminar todos',
@@ -180,35 +191,37 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             },
           ),
         ],
+        centerTitle: true,
+        shapeFamily: AppBarM3EShapeFamily.round,
+        density: AppBarM3EDensity.regular,
       ),
       body: Consumer<FavoritesProvider>(
         builder: (context, favoritesProvider, child) {
           // Loading state
           if (favoritesProvider.isLoading) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child: LoadingIndicatorM3E(),
             );
           }
 
           // Empty state
           if (favoritesProvider.isEmpty) {
-            return _buildEmptyState();
+            return _buildEmptyState(m3e);
           }
 
           // Favorites list
-          return _buildFavoritesList(favoritesProvider);
+          return _buildFavoritesList(favoritesProvider, m3e);
         },
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(M3ETheme m3e) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(m3e.spacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -217,16 +230,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withOpacity(0.5),
+                color: m3e.colors.primaryContainer.withOpacity(0.5),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.favorite_border_rounded,
                 size: 60,
-                color: colorScheme.primary.withOpacity(0.5),
+                color: m3e.colors.primary.withOpacity(0.5),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: m3e.spacing.lg),
             
             // Title
             Text(
@@ -235,23 +248,25 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: m3e.spacing.sm),
             
             // Subtitle
             Text(
               'Las frases que guardes aparecerán aquí',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
+                color: m3e.colors.onSurface.withOpacity(0.6),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: m3e.spacing.lg),
             
             // Back to home button
-            FilledButton.icon(
+            ButtonM3E(
               onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
               icon: const Icon(Icons.swipe_rounded),
               label: const Text('Explorar frases'),
+              style: ButtonM3EStyle.filled,
+              size: ButtonM3ESize.md,
             ),
           ],
         ),
@@ -259,15 +274,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildFavoritesList(FavoritesProvider favoritesProvider) {
+  Widget _buildFavoritesList(FavoritesProvider favoritesProvider, M3ETheme m3e) {
     final favorites = favoritesProvider.favorites;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Column(
       children: [
         // Header with count
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(m3e.spacing.md),
           child: Row(
             children: [
               Icon(
@@ -275,11 +291,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 color: colorScheme.error,
                 size: 20,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: m3e.spacing.sm),
               Text(
                 '${favorites.length} ${favorites.length == 1 ? 'frase guardada' : 'frases guardadas'}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.7),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                      color: m3e.colors.onSurface.withOpacity(0.7),
                     ),
               ),
             ],
@@ -289,7 +305,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         // List of favorites
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: EdgeInsets.only(bottom: m3e.spacing.md),
             itemCount: favorites.length,
             itemBuilder: (context, index) {
               final phrase = favorites[index];

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:provider/provider.dart';
+import 'package:m3e_design/m3e_design.dart';
 
 import 'themes/theme_manager.dart';
 import 'providers/theme_provider.dart';
@@ -51,12 +52,20 @@ class NoWayApp extends StatelessWidget {
   }
 
   ThemeData _buildTheme(ThemeProvider themeProvider, Brightness brightness, ColorScheme? dynamicColorScheme) {
-    // If dynamic colors are enabled and available (Android 12+), use them
+    // Build base color scheme
+    final ColorScheme baseScheme;
+    
     if (themeProvider.isDynamicColorsEnabled && dynamicColorScheme != null) {
-      return ThemeManager.createDynamicColorTheme(dynamicColorScheme);
+      // Use system dynamic colors (Android 12+)
+      baseScheme = dynamicColorScheme;
+    } else {
+      // Use predefined theme based on selected palette
+      final themeData = ThemeManager.getTheme(themeProvider.currentThemeType, brightness);
+      baseScheme = themeData.colorScheme;
     }
-    // Otherwise, use predefined theme based on selected palette
-    return ThemeManager.getTheme(themeProvider.currentThemeType, brightness);
+    
+    // Convert to M3E theme
+    return baseScheme.toM3EThemeData();
   }
 }
 

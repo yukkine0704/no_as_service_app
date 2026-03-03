@@ -17,6 +17,11 @@ dependencies:
   connectivity_plus: ^7.0.0
   path_provider: ^2.1.2
   shared_preferences: ^2.2.2
+  m3e_collection: ^0.3.7
+  m3e_design: ^0.2.1
+  app_bar_m3e: ^0.1.2
+  icon_button_m3e: ^0.2.1
+  loading_indicator_m3e: ^0.1.1
 
 dev_dependencies:
   flutter_test:

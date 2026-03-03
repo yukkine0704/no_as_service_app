@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:icon_button_m3e/icon_button_m3e.dart';
+import 'package:m3e_design/m3e_design.dart';
 import '../../core/models/no_phrase.dart';
 
 /// A reusable card widget for displaying "No" phrases.
@@ -152,11 +154,17 @@ class NoCardCompact extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
     final isDark = theme.brightness == Brightness.dark;
 
     return Card(
-      elevation: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      elevation: 0,
+      color: m3e.colors.surfaceContainerHigh,
+      margin: EdgeInsets.symmetric(
+        horizontal: m3e.spacing.md,
+        vertical: m3e.spacing.xs,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -164,26 +172,29 @@ class NoCardCompact extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(m3e.spacing.md),
           child: Row(
             children: [
               // NO indicator
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(
+                  horizontal: m3e.spacing.sm,
+                  vertical: m3e.spacing.xs,
+                ),
                 decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
+                  color: m3e.colors.primaryContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   'NO',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onPrimaryContainer,
+                    color: m3e.colors.onPrimaryContainer,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: m3e.spacing.md),
               
               // Phrase text
               Expanded(
@@ -203,21 +214,23 @@ class NoCardCompact extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (onShare != null)
-                    IconButton(
+                    IconButtonM3E(
+                      variant: IconButtonM3EVariant.standard,
+                      size: IconButtonM3ESize.sm,
                       icon: Icon(
                         Icons.share_rounded,
                         color: colorScheme.primary,
-                        size: 22,
                       ),
                       onPressed: onShare,
                       tooltip: 'Share',
                     ),
                   if (onDelete != null)
-                    IconButton(
+                    IconButtonM3E(
+                      variant: IconButtonM3EVariant.standard,
+                      size: IconButtonM3ESize.sm,
                       icon: Icon(
                         Icons.delete_outline_rounded,
                         color: colorScheme.error,
-                        size: 22,
                       ),
                       onPressed: onDelete,
                       tooltip: 'Delete',
