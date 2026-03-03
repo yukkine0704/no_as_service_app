@@ -9,7 +9,7 @@ import 'package:m3e_design/m3e_design.dart';
 
 import '../../providers/phrases_provider.dart';
 import '../../providers/favorites_provider.dart';
-import '../../providers/connectivity_provider.dart';
+import '../../providers/connectivity_provider.dart' show ConnectivityProvider, ConnectivityStatus;
 import '../widgets/swipeable_card.dart';
 import '../widgets/error_offline_view.dart';
 import '../widgets/rate_limit_card.dart';
@@ -237,12 +237,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       body: Consumer2<PhrasesProvider, ConnectivityProvider>(
         builder: (context, phrasesProvider, connectivityProvider, child) {
-          // Check for offline state
-          if (!connectivityProvider.isConnected) {
+          // Check for offline state (only show error if explicitly disconnected, not while checking)
+          if (connectivityProvider.isDisconnected && !connectivityProvider.isListening) {
             return ErrorOfflineView(
               onNavigateToFavorites: widget.onNavigateToFavorites,
               onRetry: _loadPhrases,
             );
+          }
+          
+          // Show loading while checking initial connectivity
+          if (connectivityProvider.status == ConnectivityStatus.unknown) {
+            return const SkeletonLoadingView();
           }
 
           // Check for rate limit error
