@@ -1,8 +1,3 @@
-/// UI Translations for the app
-/// 
-/// Contains all user interface strings in both English and Spanish.
-/// Use [AppLocalizations] extension on BuildContext for easy access.
-
 /// Supported languages in the app
 enum SupportedLanguage {
   english('en', 'English', '🇺🇸'),

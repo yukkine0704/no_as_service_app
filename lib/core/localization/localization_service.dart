@@ -1,8 +1,3 @@
-/// Service for managing app localization.
-/// 
-/// Provides methods to translate UI strings based on the current language.
-/// Uses a simple Dart Map approach instead of flutter_localizations for
-/// simplicity with only 2 languages.
 import 'package:flutter/material.dart';
 import 'l10n/ui_translations.dart';
 
