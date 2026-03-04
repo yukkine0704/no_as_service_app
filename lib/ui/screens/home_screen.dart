@@ -5,15 +5,17 @@ import 'package:button_m3e/button_m3e.dart';
 import 'package:fab_m3e/fab_m3e.dart';
 import 'package:icon_button_m3e/icon_button_m3e.dart';
 import 'package:loading_indicator_m3e/loading_indicator_m3e.dart';
-import 'package:m3e_design/m3e_design.dart';
 
 import '../../providers/phrases_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../providers/connectivity_provider.dart' show ConnectivityProvider, ConnectivityStatus;
+import '../../providers/card_queue_manager.dart';
 import '../widgets/swipeable_card.dart';
 import '../widgets/error_offline_view.dart';
 import '../widgets/rate_limit_card.dart';
 import '../widgets/skeleton_card.dart';
+import '../widgets/offline_card.dart';
+import '../../core/enums/offline_card_state.dart';
 
 /// Home screen with card swiper for displaying "No" phrases.
 ///
@@ -36,31 +38,39 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   int _currentPage = 0;
-  
+
   // Track if rate limit card has been shown - keeps it visible even after cooldown
   bool _hasShownRateLimitCard = false;
-  
+
   // Animation controller for card transitions
   late AnimationController _cardTransitionController;
   late Animation<double> _nextCardScaleAnimation;
   late Animation<double> _nextCardOpacityAnimation;
 
+  // Card queue manager for offline handling
+  late CardQueueManager _cardQueueManager;
+
   @override
   void initState() {
     super.initState();
+
+    // Initialize card queue manager
+    _cardQueueManager = CardQueueManager();
+
     // Load phrases when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadPhrases();
     });
-    
+
     // Initialize card transition animations
     _cardTransitionController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    
+
     _nextCardScaleAnimation = Tween<double>(
       begin: 0.9,
       end: 0.95,
@@ -68,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       parent: _cardTransitionController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _nextCardOpacityAnimation = Tween<double>(
       begin: 0.3,
       end: 0.5,
@@ -76,14 +86,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       parent: _cardTransitionController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     // Start with the "next card" visible but subtle
     _cardTransitionController.value = 1.0;
+
+    // Register for app lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Handle app lifecycle for monitoring pause/resume
+    if (state == AppLifecycleState.paused) {
+      _cardQueueManager.pauseMonitoring();
+    } else if (state == AppLifecycleState.resumed) {
+      _cardQueueManager.resumeMonitoring();
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _cardTransitionController.dispose();
+    _cardQueueManager.dispose();
     super.dispose();
   }
 
@@ -98,21 +123,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _onSwipeLeft() {
     final phrasesProvider = context.read<PhrasesProvider>();
+    final connectivityProvider = context.read<ConnectivityProvider>();
     final phrases = phrasesProvider.phrases;
-    
-    // Load more phrases if running low (prefetch for smooth experience)
-    if (phrases.length - _currentPage < 5) {
+
+    // Check if we're at the last phrase
+    final bool isAtLastPhrase = _currentPage >= phrases.length - 1;
+    final bool isOffline = connectivityProvider.isDisconnected;
+
+    // If offline and at last phrase, activate offline mode
+    if (isOffline && isAtLastPhrase && phrases.isNotEmpty) {
+      _cardQueueManager.activateOfflineMode(phrases);
+      return;
+    }
+
+    // If not offline and running low, prefetch more phrases
+    if (!isOffline && phrases.length - _currentPage < 5) {
       _prefetchPhrases();
     }
-    
+
     // Animate transition
     _cardTransitionController.value = 0.0;
-    
+
     // Go to next card
     if (_currentPage < phrases.length - 1) {
       setState(() => _currentPage++);
     }
-    
+
     // Animate next card into position
     _cardTransitionController.animateTo(1.0, duration: const Duration(milliseconds: 400));
   }
@@ -120,6 +156,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   /// Prefetch additional phrases to ensure smooth swiping
   Future<void> _prefetchPhrases() async {
     final phrasesProvider = context.read<PhrasesProvider>();
+    final connectivityProvider = context.read<ConnectivityProvider>();
+
+    // Don't prefetch if offline
+    if (connectivityProvider.isDisconnected) {
+      debugPrint('[HomeScreen] Skipping prefetch - offline');
+      return;
+    }
+
     // Fetch up to 4 phrases in the background
     for (int i = 0; i < 4; i++) {
       phrasesProvider.fetchRandomPhrase();
@@ -183,6 +227,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  /// Handle offline card dismissal
+  Future<void> _onOfflineCardDismissed() async {
+    final accepted = await _cardQueueManager.onOfflineCardDismissed();
+
+    if (accepted && mounted) {
+      // Load new phrases now that we're back online
+      await _loadPendingPhrases();
+    }
+  }
+
+  /// Load pending phrases after connection restored
+  Future<void> _loadPendingPhrases() async {
+    final phrasesProvider = context.read<PhrasesProvider>();
+
+    // Fetch a few new phrases
+    for (int i = 0; i < 3; i++) {
+      await phrasesProvider.fetchRandomPhrase(addToList: true);
+    }
+
+    // Move to next page if we're still at the last one
+    if (mounted && _currentPage >= phrasesProvider.phrases.length - 2) {
+      setState(() {
+        // Stay at current position, new cards will be available ahead
+      });
+    }
+  }
+
+  /// Handle connectivity changes from provider
+  void _onConnectivityChanged() {
+    final connectivityProvider = context.read<ConnectivityProvider>();
+    final isConnected = connectivityProvider.isConnected;
+
+    // Pass to card queue manager
+    _cardQueueManager.onConnectivityChanged(isConnected);
+
+    // If we just came back online and offline card is showing
+    if (isConnected && _cardQueueManager.shouldShowOfflineCard) {
+      // The manager will handle the state transition
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -235,59 +321,72 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         centerTitle: true,
         shapeFamily: AppBarM3EShapeFamily.round,
       ),
-      body: Consumer2<PhrasesProvider, ConnectivityProvider>(
-        builder: (context, phrasesProvider, connectivityProvider, child) {
-          // Check for offline state (only show error if explicitly disconnected, not while checking)
-          if (connectivityProvider.isDisconnected && !connectivityProvider.isListening) {
-            return ErrorOfflineView(
-              onNavigateToFavorites: widget.onNavigateToFavorites,
-              onRetry: _loadPhrases,
-            );
-          }
-          
-          // Show loading while checking initial connectivity
-          if (connectivityProvider.status == ConnectivityStatus.unknown) {
-            return const SkeletonLoadingView();
-          }
+      body: MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: _cardQueueManager),
+        ],
+        child: Consumer3<PhrasesProvider, ConnectivityProvider, CardQueueManager>(
+          builder: (context, phrasesProvider, connectivityProvider, cardQueueManager, child) {
+            // Listen to connectivity changes
+            _onConnectivityChanged();
 
-          // Check for rate limit error
-          final bool isRateLimitError = phrasesProvider.hasError &&
-              phrasesProvider.errorMessage != null &&
-              (phrasesProvider.errorMessage!.toLowerCase().contains('rate limit') ||
-               phrasesProvider.errorMessage!.toLowerCase().contains('429'));
-          
-          // Once rate limit is shown, keep it visible until user swipes it away
-          if (isRateLimitError) {
-            _hasShownRateLimitCard = true;
-            debugPrint('[HomeScreen] Rate limit detected, showing card');
-          }
-          
-          // Show rate limit card if it was triggered (even if error clears)
-          if (_hasShownRateLimitCard) {
-            return _buildCardSwiper(phrasesProvider, showRateLimit: true);
-          }
+            // Check if we should show the offline card
+            if (cardQueueManager.shouldShowOfflineCard) {
+              return _buildOfflineCardView(cardQueueManager, phrasesProvider);
+            }
 
-          // Check for loading state - show skeleton loading
-          if (phrasesProvider.isLoading && phrasesProvider.phrases.isEmpty) {
-            return const SkeletonLoadingView();
-          }
+            // Check for offline state (only show error if explicitly disconnected, not while checking)
+            if (connectivityProvider.isDisconnected && !connectivityProvider.isListening && phrasesProvider.phrases.isEmpty) {
+              return ErrorOfflineView(
+                onNavigateToFavorites: widget.onNavigateToFavorites,
+                onRetry: _loadPhrases,
+              );
+            }
 
-          // Check for error state (non-rate-limit)
-          if (phrasesProvider.hasError && phrasesProvider.phrases.isEmpty) {
-            return ErrorView(
-              message: phrasesProvider.errorMessage ?? 'Error desconocido',
-              onRetry: _loadPhrases,
-            );
-          }
+            // Show loading while checking initial connectivity
+            if (connectivityProvider.status == ConnectivityStatus.unknown) {
+              return const SkeletonLoadingView();
+            }
 
-          // Check for empty state
-          if (phrasesProvider.phrases.isEmpty) {
-            return _buildEmptyState();
-          }
+            // Check for rate limit error
+            final bool isRateLimitError = phrasesProvider.hasError &&
+                phrasesProvider.errorMessage != null &&
+                (phrasesProvider.errorMessage!.toLowerCase().contains('rate limit') ||
+                 phrasesProvider.errorMessage!.toLowerCase().contains('429'));
 
-          // Build card swiper
-          return _buildCardSwiper(phrasesProvider, showRateLimit: false);
-        },
+            // Once rate limit is shown, keep it visible until user swipes it away
+            if (isRateLimitError) {
+              _hasShownRateLimitCard = true;
+              debugPrint('[HomeScreen] Rate limit detected, showing card');
+            }
+
+            // Show rate limit card if it was triggered (even if error clears)
+            if (_hasShownRateLimitCard) {
+              return _buildCardSwiper(phrasesProvider, showRateLimit: true);
+            }
+
+            // Check for loading state - show skeleton loading
+            if (phrasesProvider.isLoading && phrasesProvider.phrases.isEmpty) {
+              return const SkeletonLoadingView();
+            }
+
+            // Check for error state (non-rate-limit)
+            if (phrasesProvider.hasError && phrasesProvider.phrases.isEmpty) {
+              return ErrorView(
+                message: phrasesProvider.errorMessage ?? 'Error desconocido',
+                onRetry: _loadPhrases,
+              );
+            }
+
+            // Check for empty state
+            if (phrasesProvider.phrases.isEmpty) {
+              return _buildEmptyState();
+            }
+
+            // Build card swiper
+            return _buildCardSwiper(phrasesProvider, showRateLimit: false);
+          },
+        ),
       ),
     );
   }
@@ -404,6 +503,82 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
         _loadPhrases();
       },
+    );
+  }
+
+  /// Build the offline card view
+  Widget _buildOfflineCardView(CardQueueManager queueManager, PhrasesProvider phrasesProvider) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      children: [
+        // Offline Card (swipeable)
+        Expanded(
+          child: _SimpleSwipeableCard(
+            child: OfflineCard(
+              state: queueManager.offlineCardState,
+              cachedPhrasesCount: phrasesProvider.phrases.length,
+              onNavigateToFavorites: widget.onNavigateToFavorites,
+              onDismiss: _onOfflineCardDismissed,
+              onCheckConnection: () {
+                // Force connectivity check
+                queueManager.checkConnection();
+              },
+              autoRevealSecondsRemaining: queueManager.offlineCardState == OfflineCardState.connectedWaiting
+                  ? 3
+                  : null,
+            ),
+            onSwipe: () {
+              // Handle swipe dismissal
+              _onOfflineCardDismissed();
+            },
+          ),
+        ),
+
+        // Bottom action buttons (simplified when offline card is showing)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Previous button (to go back to cached phrases)
+              FabM3E(
+                kind: FabM3EKind.surface,
+                size: FabM3ESize.small,
+                onPressed: _goToPreviousPage,
+                icon: Icon(
+                  Icons.undo_rounded,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Favorites button (for quick access)
+              FabM3E(
+                kind: FabM3EKind.primary,
+                size: FabM3ESize.regular,
+                onPressed: widget.onNavigateToFavorites,
+                icon: Icon(
+                  Icons.favorite_rounded,
+                  color: colorScheme.onPrimary,
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Retry/Refresh button
+              FabM3E(
+                kind: FabM3EKind.secondary,
+                size: FabM3ESize.small,
+                onPressed: () => queueManager.checkConnection(),
+                icon: Icon(
+                  Icons.refresh_rounded,
+                  color: colorScheme.onSecondaryContainer,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
