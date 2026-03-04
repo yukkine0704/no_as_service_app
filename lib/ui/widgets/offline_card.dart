@@ -4,6 +4,7 @@ import 'package:button_m3e/button_m3e.dart';
 import 'package:loading_indicator_m3e/loading_indicator_m3e.dart';
 import 'package:m3e_design/m3e_design.dart';
 import '../../core/enums/offline_card_state.dart';
+import '../../core/localization/localization_service.dart';
 
 /// Dynamic offline card with multiple states for the swiping system.
 ///
@@ -325,7 +326,7 @@ class _OfflineCardState extends State<OfflineCard>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Animated wifi-off icon
+        // Animated LoadingIndicatorM3E with floating animation
         AnimatedBuilder(
           animation: Listenable.merge([_pulseController, _floatController]),
           builder: (context, child) {
@@ -355,10 +356,10 @@ class _OfflineCardState extends State<OfflineCard>
                 ),
               ],
             ),
-            child: Icon(
-              Icons.wifi_off_rounded,
-              size: 48,
-              color: colorScheme.outline,
+            child: Center(
+              child: LoadingIndicatorM3E(
+                color: colorScheme.outline,
+              ),
             ),
           ),
         ),
@@ -366,7 +367,7 @@ class _OfflineCardState extends State<OfflineCard>
 
         // Main message
         Text(
-          'Sin conexión',
+          LocalizationService().translate('offline'),
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,
@@ -376,7 +377,7 @@ class _OfflineCardState extends State<OfflineCard>
 
         // Subtitle
         Text(
-          'Has visto todas las frases disponibles offline',
+          LocalizationService().translate('seenAllOffline'),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: colorScheme.onSurface.withOpacity(0.7),
           ),
@@ -395,7 +396,7 @@ class _OfflineCardState extends State<OfflineCard>
             borderRadius: BorderRadius.circular(m3e.spacing.lg),
           ),
           child: Text(
-            '${widget.cachedPhrasesCount} frases en caché',
+            LocalizationService().translate('cachedPhrases').replaceFirst('@count', widget.cachedPhrasesCount.toString()),
             style: theme.textTheme.bodySmall?.copyWith(
               color: colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.w500,
@@ -412,7 +413,7 @@ class _OfflineCardState extends State<OfflineCard>
               ButtonM3E(
                 onPressed: widget.onNavigateToFavorites,
                 icon: const Icon(Icons.favorite_rounded),
-                label: const Text('Ver mis favoritos'),
+                label: Text(LocalizationService().translate('viewMyFavorites')),
                 style: ButtonM3EStyle.filled,
               ),
             SizedBox(height: m3e.spacing.md),
@@ -422,7 +423,7 @@ class _OfflineCardState extends State<OfflineCard>
               ButtonM3E(
                 onPressed: widget.onCheckConnection,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Verificar conexión'),
+                label: Text(LocalizationService().translate('checkConnection')),
                 style: ButtonM3EStyle.outlined,
               ),
           ],
@@ -463,7 +464,7 @@ class _OfflineCardState extends State<OfflineCard>
 
         // Main message
         Text(
-          '¡Conexión restablecida!',
+          LocalizationService().translate('connectionRestored'),
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,
@@ -474,8 +475,8 @@ class _OfflineCardState extends State<OfflineCard>
         // Subtitle with countdown
         Text(
           _countdownSeconds != null && _countdownSeconds! > 0
-              ? 'Continuando en $_countdownSeconds segundos...'
-              : 'Desliza para continuar',
+              ? LocalizationService().translate('continuingInSeconds').replaceFirst('@count', _countdownSeconds.toString())
+              : LocalizationService().translate('swipeToContinue'),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: colorScheme.onSurface.withOpacity(0.7),
           ),
@@ -488,7 +489,7 @@ class _OfflineCardState extends State<OfflineCard>
           ButtonM3E(
             onPressed: widget.onDismiss,
             icon: const Icon(Icons.arrow_forward_rounded),
-            label: const Text('Continuar ahora'),
+            label: Text(LocalizationService().translate('continueNow')),
             style: ButtonM3EStyle.filled,
           ),
       ],
@@ -505,7 +506,7 @@ class _OfflineCardState extends State<OfflineCard>
 
         // Message
         Text(
-          'Cargando nuevas frases...',
+          LocalizationService().translate('loadingNewPhrases'),
           style: theme.textTheme.titleMedium?.copyWith(
             color: colorScheme.onSurface,
           ),

@@ -8,6 +8,7 @@ import 'package:loading_indicator_m3e/loading_indicator_m3e.dart';
 import 'package:m3e_design/m3e_design.dart';
 
 import '../../providers/favorites_provider.dart';
+import '../../core/localization/localization_service.dart';
 import '../widgets/no_card.dart';
 
 /// Favorites screen displaying saved phrases.
@@ -43,11 +44,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     Clipboard.setData(ClipboardData(text: 'NO: $phrase'));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           children: [
-            Icon(Icons.copy, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Frase copiada al portapapeles'),
+            const Icon(Icons.copy, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(LocalizationService().translate('phraseCopied')),
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -65,17 +66,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.delete_outline),
-        title: const Text('Eliminar de favoritos'),
-        content: Text('¿Estás seguro de que quieres eliminar "$phrase" de favoritos?'),
+        title: Text(LocalizationService().translate('removeFromFavorites')),
+        content: Text('${LocalizationService().translate('confirmRemove')} "$phrase" ${LocalizationService().translate('fromFavorites')}?'),
         actions: [
           ButtonM3E(
             onPressed: () => Navigator.of(context).pop(false),
-            label: const Text('Cancelar'),
+            label: Text(LocalizationService().translate('cancel')),
             style: ButtonM3EStyle.text,
           ),
           ButtonM3E(
             onPressed: () => Navigator.of(context).pop(true),
-            label: const Text('Eliminar'),
+            label: Text(LocalizationService().translate('delete')),
             style: ButtonM3EStyle.filled,
           ),
         ],
@@ -87,11 +88,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.delete_outline, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Eliminado de favoritos'),
+                const Icon(Icons.delete_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(LocalizationService().translate('removedFromFavorites')),
               ],
             ),
             backgroundColor: Theme.of(context).colorScheme.error,
@@ -110,17 +111,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.delete_sweep),
-        title: const Text('Eliminar todos los favoritos'),
-        content: const Text('¿Estás seguro de que quieres eliminar todos los favoritos? Esta acción no se puede deshacer.'),
+        title: Text(LocalizationService().translate('deleteAllFavorites')),
+        content: Text(LocalizationService().translate('confirmDeleteAll')),
         actions: [
           ButtonM3E(
             onPressed: () => Navigator.of(context).pop(false),
-            label: const Text('Cancelar'),
+            label: Text(LocalizationService().translate('cancel')),
             style: ButtonM3EStyle.text,
           ),
           ButtonM3E(
             onPressed: () => Navigator.of(context).pop(true),
-            label: const Text('Eliminar todo'),
+            label: Text(LocalizationService().translate('deleteAll')),
             style: ButtonM3EStyle.filled,
           ),
         ],
@@ -132,11 +133,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.delete_sweep, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Todos los favoritos eliminados'),
+                const Icon(Icons.delete_sweep, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(LocalizationService().translate('allFavoritesDeleted')),
               ],
             ),
             backgroundColor: Theme.of(context).colorScheme.error,
@@ -174,7 +175,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               size: 20,
             ),
             const SizedBox(width: 8),
-            const Text('Mis Favoritos'),
+            Text(LocalizationService().translate('myFavorites')),
           ],
         ),
         actions: [
@@ -186,7 +187,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 size: IconButtonM3ESize.md,
                 icon: const Icon(Icons.delete_sweep_rounded),
                 onPressed: _clearAllFavorites,
-                tooltip: 'Eliminar todos',
+                tooltip: LocalizationService().translate('deleteAll'),
               );
             },
           ),
@@ -243,7 +244,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             
             // Title
             Text(
-              'Sin favoritos aún',
+              LocalizationService().translate('noFavoritesYet'),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -252,7 +253,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             
             // Subtitle
             Text(
-              'Las frases que guardes aparecerán aquí',
+              LocalizationService().translate('favoritesAppearHere'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: m3e.colors.onSurface.withOpacity(0.6),
               ),
@@ -264,7 +265,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             ButtonM3E(
               onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
               icon: const Icon(Icons.swipe_rounded),
-              label: const Text('Explorar frases'),
+              label: Text(LocalizationService().translate('explorePhrases')),
               style: ButtonM3EStyle.filled,
               size: ButtonM3ESize.md,
             ),
@@ -293,7 +294,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
               SizedBox(width: m3e.spacing.sm),
               Text(
-                '${favorites.length} ${favorites.length == 1 ? 'frase guardada' : 'frases guardadas'}',
+                '${favorites.length} ${favorites.length == 1 ? LocalizationService().translate('phraseSaved') : LocalizationService().translate('phrasesSaved')}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                       color: m3e.colors.onSurface.withOpacity(0.7),
                     ),

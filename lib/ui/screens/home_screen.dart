@@ -10,6 +10,7 @@ import '../../providers/phrases_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../providers/connectivity_provider.dart' show ConnectivityProvider, ConnectivityStatus;
 import '../../providers/card_queue_manager.dart';
+import '../../core/localization/localization_service.dart';
 import '../widgets/swipeable_card.dart';
 import '../widgets/error_offline_view.dart';
 import '../widgets/rate_limit_card.dart';
@@ -63,6 +64,8 @@ class _HomeScreenState extends State<HomeScreen>
     // Load phrases when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadPhrases();
+      // Setup connectivity listener after first build
+      _setupConnectivityListener();
     });
 
     // Initialize card transition animations
@@ -94,6 +97,12 @@ class _HomeScreenState extends State<HomeScreen>
     WidgetsBinding.instance.addObserver(this);
   }
 
+  /// Setup connectivity change listener
+  void _setupConnectivityListener() {
+    final connectivityProvider = context.read<ConnectivityProvider>();
+    connectivityProvider.addListener(_onConnectivityChanged);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Handle app lifecycle for monitoring pause/resume
@@ -108,6 +117,14 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _cardTransitionController.dispose();
+    // Remove connectivity listener
+    try {
+      final connectivityProvider = context.read<ConnectivityProvider>();
+      connectivityProvider.removeListener(_onConnectivityChanged);
+    } catch (e) {
+      // Provider might not be available during dispose
+      debugPrint('[HomeScreen] Error removing connectivity listener: $e');
+    }
     _cardQueueManager.dispose();
     super.dispose();
   }
@@ -184,16 +201,18 @@ class _HomeScreenState extends State<HomeScreen>
 
     if (mounted && success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.favorite, color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text('Añadido a favoritos: "${phrase.phrase}"'),
-              ),
-            ],
-          ),
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.favorite, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        LocalizationService().translate('addedToFavorites').replaceFirst('@phrase', phrase.phrase),
+                      ),
+                    ),
+                  ],
+                ),
           backgroundColor: Theme.of(context).colorScheme.primary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -256,17 +275,13 @@ class _HomeScreenState extends State<HomeScreen>
 
   /// Handle connectivity changes from provider
   void _onConnectivityChanged() {
+    if (!mounted) return;
+    
     final connectivityProvider = context.read<ConnectivityProvider>();
     final isConnected = connectivityProvider.isConnected;
 
-    // Pass to card queue manager
+    // Pass to card queue manager (this will handle state transitions)
     _cardQueueManager.onConnectivityChanged(isConnected);
-
-    // If we just came back online and offline card is showing
-    if (isConnected && _cardQueueManager.shouldShowOfflineCard) {
-      // The manager will handle the state transition
-      setState(() {});
-    }
   }
 
   @override
@@ -305,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen>
             size: IconButtonM3ESize.md,
             icon: const Icon(Icons.favorite_border_rounded),
             onPressed: widget.onNavigateToFavorites,
-            tooltip: 'Favoritos',
+            tooltip: LocalizationService().translate('tooltipFavorites'),
           ),
           // Refresh button
           IconButtonM3E(
@@ -315,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen>
             onPressed: () {
               context.read<PhrasesProvider>().refresh();
             },
-            tooltip: 'Nueva frase',
+            tooltip: LocalizationService().translate('tooltipNewPhrase'),
           ),
         ],
         centerTitle: true,
@@ -327,9 +342,6 @@ class _HomeScreenState extends State<HomeScreen>
         ],
         child: Consumer3<PhrasesProvider, ConnectivityProvider, CardQueueManager>(
           builder: (context, phrasesProvider, connectivityProvider, cardQueueManager, child) {
-            // Listen to connectivity changes
-            _onConnectivityChanged();
-
             // Check if we should show the offline card
             if (cardQueueManager.shouldShowOfflineCard) {
               return _buildOfflineCardView(cardQueueManager, phrasesProvider);
@@ -373,7 +385,7 @@ class _HomeScreenState extends State<HomeScreen>
             // Check for error state (non-rate-limit)
             if (phrasesProvider.hasError && phrasesProvider.phrases.isEmpty) {
               return ErrorView(
-                message: phrasesProvider.errorMessage ?? 'Error desconocido',
+                message: phrasesProvider.errorMessage ?? LocalizationService().translate('unknownError'),
                 onRetry: _loadPhrases,
               );
             }
@@ -403,12 +415,12 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'No hay frases disponibles',
+            LocalizationService().translate('noPhrasesAvailable'),
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
           Text(
-            'Toca el botón para cargar nuevas frases',
+            LocalizationService().translate('tapButtonToLoad'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.outline,
                 ),
@@ -417,7 +429,7 @@ class _HomeScreenState extends State<HomeScreen>
           ButtonM3E(
             onPressed: _loadPhrases,
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Cargar frases'),
+            label: Text(LocalizationService().translate('loadPhrases')),
             style: ButtonM3EStyle.filled,
           ),
         ],

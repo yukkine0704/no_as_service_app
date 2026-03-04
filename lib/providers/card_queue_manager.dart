@@ -4,6 +4,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../core/models/no_phrase.dart';
 import '../core/enums/offline_card_state.dart';
 
+export '../core/enums/offline_card_state.dart';
+
 /// Manages the card queue and offline state for the swiping system.
 ///
 /// Features:
@@ -64,13 +66,25 @@ class CardQueueManager extends ChangeNotifier {
     if (wasOffline && isConnected) {
       // Connection restored
       _wasOffline = true;
-      _handleConnectionRestored();
+      // Defer state change to avoid setState during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleConnectionRestored();
+      });
     } else if (!wasOffline && !isConnected) {
       // Connection lost
-      _handleConnectionLost();
+      // Defer state change to avoid setState during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleConnectionLost();
+      });
     }
 
-    notifyListeners();
+    // Only notify if state actually changed and we're not in build phase
+    if (wasOffline != _isOffline) {
+      // Defer notification to avoid setState during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    }
   }
 
   /// Handles connection restoration logic

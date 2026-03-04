@@ -7,6 +7,8 @@ import 'package:m3e_design/m3e_design.dart';
 
 import '../../themes/theme_manager.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/locale_provider.dart';
+import '../../core/localization/localization_service.dart';
 
 /// Settings screen for theme and appearance customization.
 ///
@@ -33,7 +35,7 @@ class SettingsScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: onBack ?? () => Navigator.of(context).pop(),
         ),
-        titleText: 'Configuración',
+        titleText: LocalizationService().translate('settings'),
         centerTitle: true,
         shapeFamily: AppBarM3EShapeFamily.round,
       ),
@@ -42,8 +44,17 @@ class SettingsScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
+              // Language Section
+              _buildSectionHeader(context, LocalizationService().translate('language')),
+              const SizedBox(height: 8),
+              
+              // Language Selector
+              _buildLanguageSelector(context),
+              
+              const Divider(height: 32),
+              
               // Theme Section
-              _buildSectionHeader(context, 'Tema'),
+              _buildSectionHeader(context, LocalizationService().translate('theme')),
               const SizedBox(height: 8),
               
               // Theme Selector using SegmentedButton
@@ -57,7 +68,7 @@ class SettingsScreen extends StatelessWidget {
               const Divider(height: 32),
               
               // Appearance Section
-              _buildSectionHeader(context, 'Apariencia'),
+              _buildSectionHeader(context, LocalizationService().translate('appearance')),
               const SizedBox(height: 8),
               
               // Dark/Light Mode Toggle
@@ -71,6 +82,60 @@ class SettingsScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildLanguageSelector(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final m3e = Theme.of(context).extension<M3ETheme>() ??
+                M3ETheme.defaults(colorScheme);
+    
+    return Consumer<LocaleProvider>(
+      builder: (context, localeProvider, child) {
+        final isEnglish = localeProvider.isEnglish;
+        
+        return Card(
+          margin: EdgeInsets.symmetric(horizontal: m3e.spacing.md),
+          elevation: 0,
+          color: m3e.colors.surfaceContainerHigh,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  LocalizationService().translate('selectLanguage'),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ButtonGroupM3E(
+                  actions: [
+                    ButtonGroupM3EAction(
+                      label: const Text('🇺🇸 English'),
+                      icon: const Icon(Icons.language, size: 18),
+                      onPressed: () => localeProvider.setEnglish(),
+                    ),
+                    ButtonGroupM3EAction(
+                      label: const Text('🇪🇸 Español'),
+                      icon: const Icon(Icons.language, size: 18),
+                      onPressed: () => localeProvider.setSpanish(),
+                    ),
+                  ],
+                  overflow: ButtonGroupM3EOverflow.none,
+                  type: ButtonGroupM3EType.standard,
+                  shape: ButtonGroupM3EShape.round,
+                  selectedIndex: isEnglish ? 0 : 1,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -115,7 +180,7 @@ class SettingsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Selecciona un tema',
+                  LocalizationService().translate('selectTheme'),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurface.withOpacity(0.7),
                   ),
@@ -240,9 +305,9 @@ class SettingsScreen extends StatelessWidget {
             size: 20,
           ),
         ),
-        title: const Text('Colores dinámicos'),
+        title: Text(LocalizationService().translate('dynamicColors')),
         subtitle: Text(
-          'Utiliza los colores de Android 12+ (Monet)',
+          LocalizationService().translate('dynamicColorsDescription'),
           style: TextStyle(
             color: colorScheme.onSurface.withOpacity(0.6),
             fontSize: 12,
@@ -278,9 +343,9 @@ class SettingsScreen extends StatelessWidget {
               isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
               color: isDark ? Colors.indigo : Colors.orange,
             ),
-            title: const Text('Modo oscuro'),
+            title: Text(LocalizationService().translate('darkMode')),
             subtitle: Text(
-              isDark ? 'Activado' : 'Desactivado',
+              isDark ? LocalizationService().translate('enabled') : LocalizationService().translate('disabled'),
               style: TextStyle(
                 color: colorScheme.onSurface.withOpacity(0.6),
                 fontSize: 12,
@@ -300,12 +365,12 @@ class SettingsScreen extends StatelessWidget {
             child: ButtonGroupM3E(
               actions: [
                 ButtonGroupM3EAction(
-                  label: const Text('Claro'),
+                  label: Text(LocalizationService().translate('light')),
                   icon: const Icon(Icons.light_mode_rounded, size: 18),
                   onPressed: () => themeProvider.setBrightness(Brightness.light),
                 ),
                 ButtonGroupM3EAction(
-                  label: const Text('Oscuro'),
+                  label: Text(LocalizationService().translate('dark')),
                   icon: const Icon(Icons.dark_mode_rounded, size: 18),
                   onPressed: () => themeProvider.setBrightness(Brightness.dark),
                 ),
@@ -348,7 +413,7 @@ class SettingsScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Tema actual',
+                        LocalizationService().translate('currentTheme'),
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
                           color: colorScheme.onSurface.withOpacity(0.6),
                         ),
@@ -391,7 +456,7 @@ class SettingsScreen extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Los colores se adaptan automáticamente según tu fondo de pantalla en Android 12+',
+                      LocalizationService().translate('dynamicColorsNote'),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurface.withOpacity(0.7),
                       ),

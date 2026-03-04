@@ -9,6 +9,8 @@ import 'providers/theme_provider.dart';
 import 'providers/phrases_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/connectivity_provider.dart';
+import 'providers/locale_provider.dart';
+import 'core/localization/localization_service.dart';
 import 'ui/screens/home_screen.dart';
 import 'ui/screens/favorites_screen.dart';
 import 'ui/screens/settings_screen.dart';
@@ -30,6 +32,7 @@ class NoWayApp extends StatelessWidget {
             ChangeNotifierProvider(create: (_) => PhrasesProvider()),
             ChangeNotifierProvider(create: (_) => FavoritesProvider()..initialize()),
             ChangeNotifierProvider(create: (_) => ConnectivityProvider()..initialize()),
+            ChangeNotifierProvider(create: (_) => LocaleProvider()..initialize()),
           ],
           child: Consumer<ThemeProvider>(
             builder: (context, themeProvider, child) {
@@ -137,17 +140,17 @@ class _MainNavigationState extends State<MainNavigation> {
           NavigationDestinationM3E(
             icon: const Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded, color: colorScheme.primary),
-            label: 'Inicio',
+            label: LocalizationService().translate('homeTab'),
           ),
           NavigationDestinationM3E(
             icon: const Icon(Icons.favorite_border_rounded),
             selectedIcon: Icon(Icons.favorite_rounded, color: colorScheme.error),
-            label: 'Favoritos',
+            label: LocalizationService().translate('favoritesTab'),
           ),
           NavigationDestinationM3E(
             icon: const Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings_rounded, color: colorScheme.primary),
-            label: 'Ajustes',
+            label: LocalizationService().translate('settingsTab'),
           ),
         ],
       ),

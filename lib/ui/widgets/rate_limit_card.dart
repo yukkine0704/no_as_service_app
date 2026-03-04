@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:button_m3e/button_m3e.dart';
 import 'package:m3e_design/m3e_design.dart';
 
+import '../../core/localization/localization_service.dart';
+
 /// An animated rate limit card with playful/mocking design.
 ///
 /// Displays when the user hits the API rate limit (120 requests)
@@ -194,7 +196,7 @@ class _RateLimitCardState extends State<RateLimitCard>
 
                   // Main message
                   Text(
-                    '¡Alto ahí!',
+                    LocalizationService().translate('rateLimitTitle'),
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: m3e.colors.error,
@@ -204,7 +206,7 @@ class _RateLimitCardState extends State<RateLimitCard>
 
                   // Mocking subtitle
                   Text(
-                    '¿Tantas negativas necesitas?',
+                    LocalizationService().translate('rateLimitSubtitle'),
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: m3e.colors.onSurface.withOpacity(0.8),
                     ),
@@ -213,7 +215,7 @@ class _RateLimitCardState extends State<RateLimitCard>
                   SizedBox(height: m3e.spacing.xs),
 
                   Text(
-                    'Has alcanzado el límite de 120 solicitudes',
+                    LocalizationService().translate('rateLimitMessage'),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: m3e.colors.onSurface.withOpacity(0.6),
                     ),
@@ -241,7 +243,7 @@ class _RateLimitCardState extends State<RateLimitCard>
                     child: Column(
                       children: [
                         Text(
-                          'Espera un poco...',
+                          LocalizationService().translate('waitAMoment'),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: m3e.colors.onSurface.withOpacity(0.6),
                           ),
@@ -262,12 +264,12 @@ class _RateLimitCardState extends State<RateLimitCard>
 
                   // Action button
                   if (widget.onNavigateToFavorites != null)
-                    ButtonM3E(
-                      style: ButtonM3EStyle.filled,
-                      onPressed: widget.onNavigateToFavorites,
-                      icon: const Icon(Icons.favorite_rounded),
-                      label: const Text('Ver mis favoritos'),
-                    ),
+              ButtonM3E(
+                style: ButtonM3EStyle.filled,
+                onPressed: widget.onNavigateToFavorites,
+                icon: const Icon(Icons.favorite_rounded),
+                label: Text(LocalizationService().translate('viewMyFavorites')),
+              ),
                 ],
               ),
             ),

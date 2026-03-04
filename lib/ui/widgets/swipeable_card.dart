@@ -4,6 +4,8 @@ import 'package:flutter/physics.dart';
 import 'package:m3e_design/m3e_design.dart' as m3e_design;
 
 import '../../core/models/no_phrase.dart';
+import '../../core/localization/phrase_translation_service.dart';
+import '../../core/localization/localization_service.dart';
 
 /// Material 3 Expressive Swipeable Card with shape morphing and spring physics.
 ///
@@ -274,6 +276,11 @@ class _SwipeableCardState extends State<SwipeableCard>
   }
 
   Widget _buildCardContent(Color textColor, ColorScheme colorScheme, m3e_design.M3ETheme m3e) {
+    // Translate phrase if language is Spanish
+    final displayPhrase = LocalizationService().isSpanish
+        ? PhraseTranslationService.translate(widget.phrase.phrase)
+        : widget.phrase.phrase;
+    
     return Padding(
       padding: EdgeInsets.all(m3e.spacing.xl),
       child: Column(
@@ -290,7 +297,7 @@ class _SwipeableCardState extends State<SwipeableCard>
               borderRadius: BorderRadius.circular(m3e.spacing.lg),
             ),
             child: Text(
-              'NO',
+              LocalizationService().translate('noPrefix'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: textColor.withAlpha(178),
                     fontWeight: FontWeight.bold,
@@ -304,7 +311,7 @@ class _SwipeableCardState extends State<SwipeableCard>
           Expanded(
             child: Center(
               child: Text(
-                widget.phrase.phrase,
+                displayPhrase,
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
                       color: textColor,
                       fontWeight: FontWeight.w800,

@@ -3,6 +3,8 @@ import 'package:button_m3e/button_m3e.dart';
 import 'package:loading_indicator_m3e/loading_indicator_m3e.dart';
 import 'package:m3e_design/m3e_design.dart' hide SpringDescription;
 
+import '../../core/localization/localization_service.dart';
+
 /// An expressive animated offline error view with M3E design.
 ///
 /// Features:
@@ -75,8 +77,8 @@ class _ErrorOfflineViewState extends State<ErrorOfflineView>
       vsync: this,
     );
     
-    // Typewriter animation
-    const String fullText = 'Verifica tu conexión a internet';
+          // Typewriter animation
+          final String fullText = LocalizationService().translate('checkInternet');
     _typewriterController = AnimationController(
       duration: Duration(milliseconds: fullText.length * 50 + 500),
       vsync: this,
@@ -182,7 +184,7 @@ class _ErrorOfflineViewState extends State<ErrorOfflineView>
                 );
               },
               child: Text(
-                '¡Ups!',
+                LocalizationService().translate('oops'),
                 style: theme.textTheme.headlineLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: m3e.colors.error,
@@ -207,7 +209,7 @@ class _ErrorOfflineViewState extends State<ErrorOfflineView>
                 );
               },
               child: Text(
-                widget.message ?? 'Parece que el mundo quiere que digas que sí',
+                widget.message ?? LocalizationService().translate('worldWantsYes'),
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: m3e.colors.onSurface.withOpacity(0.7),
                 ),
@@ -270,7 +272,7 @@ class _ErrorOfflineViewState extends State<ErrorOfflineView>
                       style: ButtonM3EStyle.outlined,
                       onPressed: widget.onRetry,
                       icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Reintentar'),
+                      label: Text(LocalizationService().translate('retry')),
                     ),
                   if (widget.onRetry != null && widget.onNavigateToFavorites != null)
                     SizedBox(width: m3e.spacing.md),
@@ -281,7 +283,7 @@ class _ErrorOfflineViewState extends State<ErrorOfflineView>
                       style: ButtonM3EStyle.filled,
                       onPressed: widget.onNavigateToFavorites,
                       icon: const Icon(Icons.favorite_rounded),
-                      label: const Text('Mis Favoritos'),
+                      label: Text(LocalizationService().translate('myFavorites')),
                     ),
                 ],
               ),
@@ -556,7 +558,7 @@ class _ErrorViewState extends State<ErrorView>
                 );
               },
               child: Text(
-                'Algo salió mal',
+                LocalizationService().translate('somethingWentWrong'),
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: m3e.colors.error,
@@ -599,7 +601,7 @@ class _ErrorViewState extends State<ErrorView>
                       widget.onRetry!();
                     },
                     icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Reintentar'),
+                    label: Text(LocalizationService().translate('retry')),
                   )
                 : const SizedBox.shrink(),
             ),
