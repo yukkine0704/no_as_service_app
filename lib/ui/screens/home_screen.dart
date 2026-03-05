@@ -347,17 +347,17 @@ class _HomeScreenState extends State<HomeScreen>
               return _buildOfflineCardView(cardQueueManager, phrasesProvider);
             }
 
-            // Check for offline state (only show error if explicitly disconnected, not while checking)
-            if (connectivityProvider.isDisconnected && !connectivityProvider.isListening && phrasesProvider.phrases.isEmpty) {
+            // Show loading while checking initial connectivity (unknown status or still initializing)
+            if (connectivityProvider.status == ConnectivityStatus.unknown || !connectivityProvider.isListening) {
+              return const SkeletonLoadingView();
+            }
+
+            // Check for offline state (only show error if explicitly disconnected)
+            if (connectivityProvider.isDisconnected && phrasesProvider.phrases.isEmpty) {
               return ErrorOfflineView(
                 onNavigateToFavorites: widget.onNavigateToFavorites,
                 onRetry: _loadPhrases,
               );
-            }
-
-            // Show loading while checking initial connectivity
-            if (connectivityProvider.status == ConnectivityStatus.unknown) {
-              return const SkeletonLoadingView();
             }
 
             // Check for rate limit error

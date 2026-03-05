@@ -19,37 +19,64 @@ void main() {
   runApp(const NoWayApp());
 }
 
-class NoWayApp extends StatelessWidget {
+class NoWayApp extends StatefulWidget {
   const NoWayApp({super.key});
+
+  @override
+  State<NoWayApp> createState() => _NoWayAppState();
+}
+
+class _NoWayAppState extends State<NoWayApp> {
+  late final ThemeProvider _themeProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeProvider = ThemeProvider();
+  }
+
+  @override
+  void dispose() {
+    _themeProvider.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        return MultiProvider(
-          providers: [
-            ChangeNotifierProvider(create: (_) => ThemeProvider()),
-            ChangeNotifierProvider(create: (_) => PhrasesProvider()),
-            ChangeNotifierProvider(create: (_) => FavoritesProvider()..initialize()),
-            ChangeNotifierProvider(create: (_) => ConnectivityProvider()..initialize()),
-            ChangeNotifierProvider(create: (_) => LocaleProvider()..initialize()),
-          ],
-          child: Consumer<ThemeProvider>(
-            builder: (context, themeProvider, child) {
-              return MaterialApp(
-                title: 'NoWay',
-                debugShowCheckedModeBanner: false,
-                theme: _buildTheme(themeProvider, Brightness.light, lightDynamic),
-                darkTheme: _buildTheme(themeProvider, Brightness.dark, darkDynamic),
-                themeMode: themeProvider.isDynamicColorsEnabled 
-                    ? ThemeMode.system 
-                    : (themeProvider.brightness == Brightness.dark 
-                        ? ThemeMode.dark 
-                        : ThemeMode.light),
-                home: const MainNavigation(),
-              );
-            },
-          ),
+        // Use dark dynamic colors if available, otherwise light
+        final dynamicColorScheme = darkDynamic ?? lightDynamic;
+        
+        return FutureBuilder<void>(
+          future: _themeProvider.initialize(dynamicColorScheme: dynamicColorScheme),
+          builder: (context, snapshot) {
+            return MultiProvider(
+              providers: [
+                ChangeNotifierProvider<ThemeProvider>.value(value: _themeProvider),
+                ChangeNotifierProvider(create: (_) => PhrasesProvider()),
+                ChangeNotifierProvider(create: (_) => FavoritesProvider()..initialize()),
+                ChangeNotifierProvider(create: (_) => ConnectivityProvider()..initialize()),
+                ChangeNotifierProvider(create: (_) => LocaleProvider()..initialize()),
+              ],
+              child: Consumer<ThemeProvider>(
+                builder: (context, themeProvider, child) {
+                  return MaterialApp(
+                    title: 'NoWay',
+                    debugShowCheckedModeBanner: false,
+                    theme: _buildTheme(themeProvider, Brightness.light, lightDynamic),
+                    darkTheme: _buildTheme(themeProvider, Brightness.dark, darkDynamic),
+                    themeMode: themeProvider.isDynamicColorsEnabled 
+                        ? ThemeMode.system 
+                        : (themeProvider.brightness == Brightness.dark 
+                            ? ThemeMode.dark 
+                            : ThemeMode.light),
+                    home: const MainNavigation(),
+                  );
+                },
+              ),
+            );
+          },
         );
       },
     );
