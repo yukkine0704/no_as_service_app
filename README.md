@@ -41,7 +41,10 @@ Una aplicación Flutter para descubrir y guardar frases de rechazo ("No"). Explo
 
 | Home | Favoritos | Ajustes |
 |------|-----------|----------|
-| ![Home](https://via.placeholder.com/300x600?text=Home+Screen) | ![Favorites](https://via.placeholder.com/300x600?text=Favorites) | ![Settings](https://via.placeholder.com/300x600?text=Settings) |
+| <img width="1344" height="2992" alt="Screenshot_20260304-214159" src="https://github.com/user-attachments/assets/c2199e19-d724-4ec3-adc7-27e59782e01d" />
+ |<img width="1344" height="2992" alt="Screenshot_20260304-214205" src="https://github.com/user-attachments/assets/50b523e0-ba16-4e55-b25d-74e4ccc8d06d" />
+ | <img width="1344" height="2992" alt="Screenshot_20260304-214209" src="https://github.com/user-attachments/assets/b5d39ab1-1510-43f5-986a-4b4a427d9199" />
+ |
 
 ## 🚀 Instalación
 
