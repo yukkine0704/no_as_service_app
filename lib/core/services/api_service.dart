@@ -201,41 +201,74 @@ class ApiService {
     }
   }
 
-  /// Fetches all available "No" phrases from the API.
+  /// Fetches multiple "No" phrases from the API for initial load.
   ///
   /// Since the API only supports random phrase endpoints, this method
-  /// fetches a single random phrase to simulate "all" behavior.
-  /// For multiple phrases, call this method multiple times.
+  /// fetches multiple random phrases in parallel to populate the initial
+  /// card stack. By default, fetches 5 phrases to ensure smooth swiping.
+  ///
+  /// [count] - Number of phrases to fetch (default: 5).
   ///
   /// Throws [RateLimitError] if rate limit is exceeded.
   /// Throws [NetworkError] if there's a connectivity issue.
   /// Throws [ApiError] for other API errors.
-  Future<List<NoPhrase>> getAllPhrases() async {
+  Future<List<NoPhrase>> getAllPhrases({int count = 5}) async {
+    final phrases = <NoPhrase>[];
+    final phraseIds = <String>{}; // Track IDs to avoid duplicates
+    
+    // Fetch multiple phrases in parallel for faster initial load
+    final futures = List.generate(count, (_) => _fetchSinglePhrase());
+    
+    try {
+      final results = await Future.wait(futures, eagerError: false);
+      
+      for (final phrase in results) {
+        if (phrase != null && !phraseIds.contains(phrase.id)) {
+          phrases.add(phrase);
+          phraseIds.add(phrase.id);
+        }
+      }
+      
+      // If we got no phrases, throw an error
+      if (phrases.isEmpty) {
+        throw const ApiError(message: 'Failed to fetch any phrases');
+      }
+      
+      return phrases;
+    } on RateLimitError {
+      rethrow;
+    } on NetworkError {
+      rethrow;
+    } on ApiError {
+      rethrow;
+    } catch (e) {
+      throw ApiError(message: 'Failed to fetch phrases: $e');
+    }
+  }
+  
+  /// Helper method to fetch a single phrase for batch operations.
+  Future<NoPhrase?> _fetchSinglePhrase() async {
     try {
       final response = await _dio.get('/no');
 
       if (response.statusCode == 200) {
         final data = response.data;
         
-        // Handle single phrase response (the API returns one random phrase)
         if (data is Map<String, dynamic>) {
           if (data.containsKey('data')) {
-            return [NoPhrase.fromJson(data['data'] as Map<String, dynamic>)];
+            return NoPhrase.fromJson(data['data'] as Map<String, dynamic>);
           }
-          return [NoPhrase.fromJson(data)];
+          return NoPhrase.fromJson(data);
         } else if (data is String) {
-          return [NoPhrase(id: '1', phrase: data)];
+          // Generate a unique ID based on the phrase content
+          final id = data.hashCode.toString();
+          return NoPhrase(id: id, phrase: data);
         }
-        
-        throw const ApiError(message: 'Unexpected response format');
       }
-
-      throw ApiError(
-        message: 'Failed to fetch phrases',
-        statusCode: response.statusCode,
-      );
-    } on DioException catch (e) {
-      throw _handleDioError(e);
+      return null;
+    } catch (e) {
+      // Return null for individual failures in batch operations
+      return null;
     }
   }
 
