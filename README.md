@@ -10,19 +10,19 @@ Una aplicación Flutter para descubrir y guardar frases de rechazo ("No"). Explo
 
 ### 🎯 Núcleo
 - **Tarjetas deslizables**: Navega por frases con gestos intuitivos
-  - Desliza a la derecha para añadir a favoritos ❤️
-  - Desliza a la izquierda para ver la siguiente frase ➡️
+  - Desliza a la derecha para añadir a favoritos
+  - Desliza a la izquierda para ver la siguiente frase
 - **Favoritos**: Guarda tus frases favoritas localmente con persistencia
 - **Modo offline inteligente**: Sistema avanzado de caché y reconexión automática
 
 ### 🎨 Personalización (Material 3 Expressive)
 - **Sistema de temas M3E**: Diseño moderno con Material 3 Expressive
-  - Electric Orange 🌅
-  - Deep Purple 💜
-  - Cyber Teal 💠
-- **Colores dinámicos**: Soporte completo para Material You (Monet) en Android 12+ 🎨
-- **Modo oscuro/claro**: Transiciones suaves entre modos 🌙
-- **Localización**: Soporte multilingüe (Español e Inglés) 🌍
+  - Electric Orange
+  - Deep Purple
+  - Cyber Teal
+- **Colores dinámicos**: Soporte completo para Material You (Monet) en Android 12+
+- **Modo oscuro/claro**: Transiciones suaves entre modos
+- **Localización**: Soporte multilingüe (Español e Inglés)
 
 ### 🚀 Rendimiento y UX
 - **Prefetching inteligente**: Carga anticipada de frases para navegación fluida
@@ -41,10 +41,7 @@ Una aplicación Flutter para descubrir y guardar frases de rechazo ("No"). Explo
 
 | Home | Favoritos | Ajustes |
 |------|-----------|----------|
-| <img width="1344" height="2992" alt="Screenshot_20260304-214159" src="https://github.com/user-attachments/assets/c2199e19-d724-4ec3-adc7-27e59782e01d" />
- |<img width="1344" height="2992" alt="Screenshot_20260304-214205" src="https://github.com/user-attachments/assets/50b523e0-ba16-4e55-b25d-74e4ccc8d06d" />
- | <img width="1344" height="2992" alt="Screenshot_20260304-214209" src="https://github.com/user-attachments/assets/b5d39ab1-1510-43f5-986a-4b4a427d9199" />
- |
+| <img width="1344" height="2992" alt="Screenshot_20260304-214159" src="https://github.com/user-attachments/assets/c2199e19-d724-4ec3-adc7-27e59782e01d" /> | <img width="1344" height="2992" alt="Screenshot_20260304-214205" src="https://github.com/user-attachments/assets/50b523e0-ba16-4e55-b25d-74e4ccc8d06d" /> | <img width="1344" height="2992" alt="Screenshot_20260304-214209" src="https://github.com/user-attachments/assets/b5d39ab1-1510-43f5-986a-4b4a427d9199" /> |
 
 ## 🚀 Instalación
 
