@@ -1,14 +1,15 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:app_bar_m3e/app_bar_m3e.dart';
 import 'package:button_m3e/button_m3e.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:icon_button_m3e/icon_button_m3e.dart';
 import 'package:loading_indicator_m3e/loading_indicator_m3e.dart';
 import 'package:m3e_design/m3e_design.dart';
+import 'package:provider/provider.dart';
 
-import '../../providers/favorites_provider.dart';
 import '../../core/localization/localization_service.dart';
+import '../../core/localization/phrase_translation_service.dart';
+import '../../providers/favorites_provider.dart';
 import '../widgets/no_card.dart';
 
 /// Favorites screen displaying saved phrases.
@@ -241,7 +242,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
             ),
             SizedBox(height: m3e.spacing.lg),
-            
+
             // Title
             Text(
               LocalizationService().translate('noFavoritesYet'),
@@ -250,7 +251,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
             ),
             SizedBox(height: m3e.spacing.sm),
-            
+
             // Subtitle
             Text(
               LocalizationService().translate('favoritesAppearHere'),
@@ -260,7 +261,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: m3e.spacing.lg),
-            
+
             // Back to home button
             ButtonM3E(
               onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
@@ -310,8 +311,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             itemCount: favorites.length,
             itemBuilder: (context, index) {
               final phrase = favorites[index];
+              // Translate phrase if language is Spanish
+              final displayPhrase = LocalizationService().isSpanish
+                  ? PhraseTranslationService.translate(phrase.phrase)
+                  : phrase.phrase;
               return NoCardCompact(
-                phrase: phrase,
+                phrase: phrase.copyWith(phrase: displayPhrase),
                 onShare: () => _sharePhrase(phrase.phrase),
                 onDelete: () => _deletePhrase(phrase.id, phrase.phrase),
               );
